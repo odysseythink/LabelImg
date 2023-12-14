@@ -10,6 +10,8 @@
 #include <QWheelEvent>
 #include <QKeyEvent>
 #include <QCursor>
+#include <memory>
+#include <QSharedPointer>
 #include "libs/shape.h"
 
 #define CURSOR_DEFAULT  Qt::ArrowCursor
@@ -64,11 +66,8 @@ public:
     void undoLastLine();
     void resetAllLines();
     void loadPixmap();
-    void loadShapes(QList<Shape *> shapes);
-    void setShapeVisible(Shape * shape, bool value);
-    int currentCursor();
-    void overrideCursor(Qt::CursorShape cursor);
-    void restoreCursor();
+    void SetShapes(QList<QSharedPointer<Shape> > shapes);
+    void SetShapeVisible(Shape * shape, bool value);
     void resetState();
     void SetMode(Mode mode);
 
@@ -89,6 +88,11 @@ protected:
     virtual void wheelEvent(QWheelEvent *event);
     virtual void keyPressEvent(QKeyEvent *event);
 
+private:
+    void __RestoreCursor();
+    void __OverrideCursor(Qt::CursorShape cursor);
+    int __CurrentCursor();
+
 signals:
     void zoomRequest(int);
     void scrollRequest(double, int);
@@ -106,7 +110,7 @@ public:
     bool verified;
     float scale;
     QPixmap pixmap;
-    QList<Shape *> shapes;
+    QList<QSharedPointer<Shape> > shapes;
     QImage image;
 
 private:
@@ -114,10 +118,10 @@ private:
     double epsilon;
 
     Mode m_enMode;
-    Shape *current;
+    QSharedPointer<Shape> current;
     QColor drawingLineColor;
     QColor drawingRectColor;
-    Shape * line;
+    QSharedPointer<Shape> line;
     QPointF prevPoint;
     QPair<QPointF, QPointF> offsets;
     int label_font_size;

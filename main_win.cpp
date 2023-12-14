@@ -544,7 +544,6 @@ void MainWin::toggleDrawingSensitive(bool drawing){
 //        # Cancel creation.
         qDebug("Cancel creation.");
         canvas->SetMode(Canvas::EDIT);
-        canvas->restoreCursor();
         actions.create->setEnabled(true);
     }
 }
@@ -665,7 +664,7 @@ void MainWin::loadLabels(QList<Shape*> shapes){
 //            shape.fill_color = generateColorByText(label)
 
 //        self.addLabel(shape)
-    canvas->loadShapes(shapes);
+    canvas->SetShapes(shapes);
 }
 bool MainWin::saveLabels(QString annotationFilePath){
     if (labelFile == nullptr){

@@ -14,7 +14,7 @@ Canvas::Canvas(QString *filePath, QWidget *parent)
     selectedShapeCopy = nullptr;
     drawingLineColor = QColor(0, 0, 255);
     drawingRectColor = QColor(0, 0, 255);
-    line = new Shape("",drawingLineColor);
+    line = QSharedPointer<Shape>(new Shape("",drawingLineColor), &QObject::deleteLater);
     prevPoint = QPointF();
 //    offsets = QPointF(), QPointF();
     scale = 1.0;
@@ -49,13 +49,13 @@ void Canvas::setDrawingColor(QColor qcolor){
     drawingRectColor = qcolor;
 }
 void Canvas::enterEvent(QEvent *ev){
-    overrideCursor(_cursor);
+    __OverrideCursor(_cursor);
 }
 void Canvas::leaveEvent(QEvent *ev){
-    restoreCursor();
+    __RestoreCursor();
 }
 void Canvas::focusOutEvent(QFocusEvent *ev){
-    restoreCursor();
+    __RestoreCursor();
 }
 bool Canvas::isVisible(Shape * shape){
     if(visible.contains(shape))
@@ -85,6 +85,8 @@ void Canvas::SetMode(Mode mode){
     if(mode == CREATE){  //# Create
         unHighlight();
         deSelectShape();
+    } else if(mode == EDIT) {
+        __RestoreCursor();
     }
     prevPoint = QPointF();
     repaint();
@@ -129,16 +131,16 @@ void Canvas::finalise(){
         qCritical("no current");
         return;
     }
-    if (current->pointAt(0) == current->lastPoint()){
+    if (current.get()->pointAt(0) == current.get()->lastPoint()){
         current = nullptr;
         emit drawingPolygon(false);
         update();
         return;
     }
 
-    current->close();
-    shapes.append(current);
-    current = nullptr;
+    current.get()->close();
+    shapes.append(QSharedPointer<Shape>(current));
+    current.clear();
     line->points.clear();
     setHiding(false);
     emit newShape();
@@ -173,12 +175,12 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
 
 //    # Polygon drawing.
     if (drawing()){
-        overrideCursor(CURSOR_DRAW);
-        if (current != nullptr){
+        __OverrideCursor(CURSOR_DRAW);
+        if (!current.isNull()){
             qDebug("-----------current.pointCount()=%d", line->pointCount());
 //            # Display annotation width and height while drawing
-            double current_width = qAbs(current->pointAt(0).x() - pos.x());
-            double current_height = qAbs(current->pointAt(0).y() - pos.y());
+            double current_width = qAbs(current.get()->pointAt(0).x() - pos.x());
+            double current_height = qAbs(current.get()->pointAt(0).y() - pos.y());
             emit labelCoordinatesMsg(QString("Width: %1, Height: %2 / X: %3; Y: %4").arg(current_width).arg(current_height).arg(pos.x()).arg(pos.y()));
 
             QColor color = drawingLineColor;
@@ -195,7 +197,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
 //                # user:
                 QPointF pos = current->pointAt(0);
                 QColor color = current->line_color;
-                overrideCursor(CURSOR_POINT);
+                __OverrideCursor(CURSOR_POINT);
                 current->highlightVertex(0, Shape::NEAR_VERTEX);
             }
 
@@ -224,7 +226,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
 //    # Polygon copy moving.
     if (Qt::RightButton & ev->buttons()){
         if (selectedShapeCopy != nullptr && prevPoint.isNull()){
-            overrideCursor(CURSOR_MOVE);
+            __OverrideCursor(CURSOR_MOVE);
             boundedMoveShape(selectedShapeCopy, pos);
             repaint();
         }else if (selectedShape !=nullptr){
@@ -248,7 +250,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
             double current_height = qAbs(point1.y() - point3.y());
             emit labelCoordinatesMsg(QString("Width: %1, Height: %2 / X: %3; Y: %4").arg(current_width).arg(current_height).arg(pos.x()).arg(pos.y()));
         }else if (selectedShape != nullptr && prevPoint.isNull()){
-            overrideCursor(CURSOR_MOVE);
+            __OverrideCursor(CURSOR_MOVE);
             boundedMoveShape(selectedShape, pos);
             emit shapeMoved();
             repaint();
@@ -277,9 +279,9 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
     setToolTip("Image");
     bool isHightLight =false;
     for(int iLoop = shapes.size() - 1; iLoop >= 0; iLoop--){
-        if (isVisible(shapes.at(iLoop))){
+        if (isVisible(shapes.at(iLoop).get())){
             isHightLight = true;
-            Shape* shape = shapes.at(iLoop);
+            Shape* shape = shapes.at(iLoop).get();
 
             //        # Look for a nearby vertex to highlight. If that fails,
             //        # check if we happen to be inside a shape.
@@ -290,7 +292,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
                 hVertex = index;
                 hShape = shape;
                 shape->highlightVertex(index, Shape::MOVE_VERTEX);
-                overrideCursor(CURSOR_POINT);
+                __OverrideCursor(CURSOR_POINT);
                 setToolTip("Click & drag to move point");
                 setStatusTip(toolTip());
                 update();
@@ -302,7 +304,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
                 hShape = shape;
                 setToolTip(QString("Click & drag to move shape '%s'").arg(shape->label));
                 setStatusTip(toolTip());
-                overrideCursor(CURSOR_GRAB);
+                __OverrideCursor(CURSOR_GRAB);
                 update();
                 break;
             }
@@ -315,7 +317,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
         }
         hVertex = -1;
         hShape = nullptr;
-        overrideCursor(CURSOR_DEFAULT);
+        __OverrideCursor(CURSOR_DEFAULT);
     }
 }
 void Canvas::mousePressEvent(QMouseEvent * ev){
@@ -338,7 +340,7 @@ void Canvas::mousePressEvent(QMouseEvent * ev){
 void Canvas::mouseReleaseEvent(QMouseEvent * ev){
     if (ev->button() == Qt::RightButton){
         QMenu* menu = menus[bool(selectedShapeCopy != nullptr)];
-        restoreCursor();
+        __RestoreCursor();
         if (! menu->exec(mapToGlobal(ev->pos())) && selectedShapeCopy != nullptr){
 //            # Cancel the move by deleting the shadow copy.
             selectedShapeCopy = nullptr;
@@ -346,9 +348,9 @@ void Canvas::mouseReleaseEvent(QMouseEvent * ev){
         }
     }else if (ev->button() == Qt::LeftButton && selectedShape != nullptr){
         if (selectedVertex())
-            overrideCursor(CURSOR_POINT);
+            __OverrideCursor(CURSOR_POINT);
         else
-            overrideCursor(CURSOR_GRAB);
+            __OverrideCursor(CURSOR_GRAB);
     }else if (ev->button() == Qt::LeftButton){
         QPointF pos = transformPos(ev->pos());
         if (drawing())
@@ -364,7 +366,7 @@ void Canvas::endMove(bool copy){
 //    #del shape.fill_color
 //    #del shape.line_color
     if (copy){
-        shapes.append(shape);
+        shapes.append(QSharedPointer<Shape>(shape));
         selectedShape->selected = false;
         selectedShape = shape;
         repaint();
@@ -395,7 +397,7 @@ void Canvas::handleDrawing(QPointF pos){
       current->addPoint(QPointF(minX, maxY));
       finalise();
   }else if (!outOfPixmap(pos)){
-      current = new Shape();
+      current = QSharedPointer<Shape>(new Shape());
       current->addPoint(pos);
       line->points << pos << pos;
       setHiding();
@@ -779,7 +781,7 @@ Shape* Canvas::setLastLabel(QString text, QColor line_color, QColor fill_color){
       if (fill_color.isValid())
           shapes[shapes.size()-1]->fill_color = fill_color;
 
-      return shapes[shapes.size()-1];
+      return shapes[shapes.size()-1].get();
 }
 void Canvas::undoLastLine(){
     if (shapes.size() == 0){
@@ -811,33 +813,38 @@ void Canvas::loadPixmap(){
         repaint();
     }
 }
-void Canvas::loadShapes(QList<Shape *> shapes){
-    this->shapes = shapes;
+void Canvas::SetShapes(QList<QSharedPointer<Shape> > shapes){
+    this->shapes.clear();
+    for(auto shape : shapes){
+        QSharedPointer<Shape> pNew(shape);
+        this->shapes.append(pNew);
+        shape.clear();
+    }
     current = nullptr;
     repaint();
 }
-void Canvas::setShapeVisible(Shape * shape, bool value){
+void Canvas::SetShapeVisible(Shape * shape, bool value){
     visible[shape] = value;
     repaint();
 }
-int Canvas::currentCursor(){
+int Canvas::__CurrentCursor(){
     QCursor* cursor = QApplication::overrideCursor();
     if (cursor != nullptr)
         return cursor->shape();
     return -1;
 }
-void Canvas::overrideCursor(Qt::CursorShape cursor){
+void Canvas::__OverrideCursor(Qt::CursorShape cursor){
     _cursor = cursor;
-    if (currentCursor() == -1)
+    if (__CurrentCursor() == -1)
         QApplication::setOverrideCursor(QCursor(cursor));
     else
         QApplication::changeOverrideCursor(QCursor(cursor));
 }
-void Canvas::restoreCursor(){
+void Canvas::__RestoreCursor(){
     QApplication::restoreOverrideCursor();
 }
 void Canvas::resetState(){
-    restoreCursor();
+    __RestoreCursor();
     pixmap.detach();
     update();
 }
