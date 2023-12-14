@@ -47,6 +47,14 @@ public:
     void highlightVertex(int i, int action);
     void highlightClear();
     Shape &operator=(const Shape &arr);
+    QPointF pointAt(int idx);
+    QPointF lastPoint(){
+        return pointAt(pointCount()-1);
+    }
+    int pointCount(){
+        return points.count();
+    }
+    void SetPoint(int idx, QPointF p);
 
 signals:
 

@@ -40,76 +40,28 @@ _noSelectionSlot = false;
 _beginner = true;
 //self.screencastViewer = self.getAvailableScreencastViewer();
 //self.screencast = "https://youtu.be/p0nR2YsCY_U";
-
+    canvas = new Canvas(&filePath, this);
 
 //    # Load predefined classes to the list
     loadPredefinedClasses(defaultPrefdefClassFile);
 //# Main widgets and related state.
  labelDialog = new LabelDialog(labelHist, parent=this);
 
-    {
-        QVBoxLayout* listLayout = new QVBoxLayout();
-        listLayout->setContentsMargins(0, 0, 0, 0);
-    //        # Create a widget for using default label
-            useDefaultLabelCheckbox = new QCheckBox("Use default labtel");
-            useDefaultLabelCheckbox->setChecked(false);
-            defaultLabelTextLine = new QLineEdit();
-            QHBoxLayout* useDefaultLabelQHBoxLayout = new QHBoxLayout();
-            useDefaultLabelQHBoxLayout->addWidget(useDefaultLabelCheckbox);
-            useDefaultLabelQHBoxLayout->addWidget(defaultLabelTextLine);
-            QWidget* useDefaultLabelContainer = new QWidget();
-            useDefaultLabelContainer->setLayout(useDefaultLabelQHBoxLayout);
+    ui->m_iLabelsWidget->SetCanvas(canvas);
+    connect(ui->m_iLabelsWidget, SIGNAL(sigDifficultChanged(int)), this, SLOT(btnstate(int)));
+    connect(ui->m_iLabelsWidget, SIGNAL(sigLabelSelectionChanged(QListWidgetItem *)), this, SLOT(labelSelectionChanged(QListWidgetItem *)));
+    connect(ui->m_iLabelsWidget, SIGNAL(sigEditLable(QListWidgetItem *)), this, SLOT(editLabel(QListWidgetItem*)));
+    connect(ui->m_iLabelsWidget, SIGNAL(sigLabelChanged(QListWidgetItem *)), this, SLOT(labelItemChanged(QListWidgetItem*)));
 
-        //# Create a widget for edit and diffc button
-        diffcButton = new QCheckBox("difficult");
-        diffcButton->setChecked(false);
-
-        editButton = new QToolButton();
-        editButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-
-        //# Add some of widgets to listLayout
-        listLayout->addWidget(editButton);
-        listLayout->addWidget(diffcButton);
-        listLayout->addWidget(useDefaultLabelContainer);
-
-        //# Create and add a widget for showing current label items
-        labelList = new QListWidget();
-        QWidget* labelListContainer = new QWidget();
-        labelListContainer->setLayout(listLayout);
-        connect(labelList, SIGNAL(itemActivated(QListWidgetItem *)), this, SLOT(labelSelectionChanged(QListWidgetItem *)));
-        connect(labelList, SIGNAL(itemSelectionChanged()), this, SLOT(labelSelectionChanged()));
-        connect(labelList, SIGNAL(itemDoubleClicked()), this, SLOT(editLabel()));
-
-    //# Connect to itemChanged to detect checkbox changes.
-        connect(labelList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(labelItemChanged(QListWidgetItem *)));
-        listLayout->addWidget(labelList);
-
-    //    dock = new QDockWidget("Box Labels", this);
-    //    dock->setObjectName("Labels");
-        ui->m_iLabelsDock->setWidget(labelListContainer);
-        connect(ui->m_LabelsWidget, SIGNAL(sigDifficultChanged(int)), this, SLOT(btnstate(int)));
-        connect(ui->m_LabelsWidget, SIGNAL(sigLabelSelectionChanged(QListWidgetItem *)), this, SLOT(labelSelectionChanged(QListWidgetItem *)));
-        connect(ui->m_LabelsWidget, SIGNAL(sigEditLable(QListWidgetItem *)), this, SLOT(editLabel(itemDoubleClicked*)));
-    }
-
-    fileListWidget = new QListWidget();
-    connect(fileListWidget, SIGNAL(itemDoubleClicked()), this, SLOT(fileitemDoubleClicked()));
-    QVBoxLayout* filelistLayout = new QVBoxLayout();
-    filelistLayout->setContentsMargins(0, 0, 0, 0);
-    filelistLayout->addWidget(fileListWidget);
-    QWidget* fileListContainer = new QWidget();
-    fileListContainer->setLayout(filelistLayout);
-//    filedock = new QDockWidget("File List", this);
-//    ui->m_iFilesDock->setObjectName("Files");
-    ui->m_iFilesDock->setWidget(fileListContainer);
+    connect(ui->m_iFileListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(fileItemDoubleClicked(QListWidgetItem *)));
 
     zoomWidget = new ZoomWidget();
     colorDialog = new ColorDialog(this);
 
-    canvas = new Canvas(&filePath, this);
+
     connect(canvas, SIGNAL(zoomRequest(int)), this, SLOT(zoomRequest(int)));
 
-    canvas->setDrawingShapeToSquare(Settings::GetInstance()->GetBool(SETTING_DRAW_SQUARE, false));
+    canvas->OnDrawingShapeToSquare(Settings::GetInstance()->GetBool(SETTING_DRAW_SQUARE, false));
 
     ui->m_iCentralScrollArea->setWidget(canvas);
     ui->m_iCentralScrollArea->setWidgetResizable(true);
@@ -131,29 +83,30 @@ _beginner = true;
     ui->m_iLabelsDock->setFeatures(QDockWidget::DockWidgetFeatures(ui->m_iLabelsDock->features() ^ dockFeatures));
 
     auto quit = newAction("Quit", SLOT(close()), "Ctrl+Q", "quit", "Quit application");
-    auto open = newAction("openFile", SLOT(openFile), "Ctrl+O", "open", "Open image or label file");
-    auto opendir = newAction("Open Dir", SLOT(openDirDialog), "Ctrl+u", "open", "Open Dir");
-    auto changeSavedir = newAction("Change Save Dir", SLOT(changeSavedirDialog), "Ctrl+r", "open", "Change default saved Annotation dir");
-    auto openAnnotation = newAction("Open Annotation", SLOT(openAnnotationDialog), "Ctrl+Shift+O", "open", "Open an annotation file");
-    auto openNextImg = newAction("Next Image", SLOT(openNextImg), "d", "next", "Open the next Image");
-    auto openPrevImg = newAction("Prev Image", SLOT(openPrevImg), "a", "prev", "Open the previous Image");
-    auto verify = newAction("Verify Image", SLOT(verifyImg),"space", "verify", "Verify Image");
-    auto save = newAction("Save", SLOT(saveFile),"Ctrl+S", "save", "Save the labels to a file", false);
-    auto save_format = newAction("&PascalVOC", SLOT(change_format),"Ctrl+", "format_voc", "Change save format", true);
-    auto saveAs = newAction("Save As", SLOT(saveFileAs),"Ctrl+Shift+S", "save-as", "Save the labels to a different file", false);
-    auto close = newAction("Close", SLOT(closeFile), "Ctrl+W", "close", "Close the current file");
-    auto resetAll = newAction("Reset All", SLOT(resetAll), "", "resetall", "Reset All");
-    auto color1 = newAction("Box Line Color", SLOT(chooseColor1),"Ctrl+L", "color_line", "Choose Box line color");
-    auto createMode = newAction("Create\nRectBox", SLOT(setCreateMode),"w", "new", "Draw a new box", false);
-    auto editMode = newAction("&Edit\nRectBox", SLOT(setEditMode),"Ctrl+J", "edit", "Move and edit Boxs", false);
-    auto create = newAction("Create\nRectBox", SLOT(createShape),"w", "new", "Draw a new box", false);
-    auto deleteAction = newAction("Delete\nRectBox", SLOT(deleteSelectedShape),"Delete", "delete", "Remove the box", false);
-    auto copy = newAction("Duplicate\nRectBox", SLOT(copySelectedShape),"Ctrl+D", "copy", "Create a duplicate of the selected box",false);
-    auto advancedMode = newAction("Advanced Mode", SLOT(toggleAdvancedMode), "Ctrl+Shift+A", "expert", "Swtich to advanced mode",true,true);
-    auto hideAll = newAction("&Hide\nRectBox", SLOT(togglePolygons),"Ctrl+H", "hide", "Hide all bounding boxes",false);
-    auto showAll = newAction("&Show\nRectBox", SLOT(togglePolygons),"Ctrl+A", "hide", "Show all bounding boxes",false);
-    auto help = newAction("Tutorial", SLOT(showTutorialDialog), "", "help", "Show demo");
-    auto showInfo = newAction("Information", SLOT(showInfoDialog), "", "help", "Information");
+    auto open = newAction("openFile", SLOT(openFile()), "Ctrl+O", "open", "Open image or label file");
+    auto opendir = newAction("Open Dir", SLOT(openDirDialog()), "Ctrl+u", "open", "Open Dir");
+    auto changeSavedir = newAction("Change Save Dir", SLOT(changeSavedirDialog()), "Ctrl+r", "open", "Change default saved Annotation dir");
+    auto openAnnotation = newAction("Open Annotation", SLOT(openAnnotationDialog()), "Ctrl+Shift+O", "open", "Open an annotation file");
+    auto openNextImg = newAction("Next Image", SLOT(openNextImg()), "d", "next", "Open the next Image");
+    auto openPrevImg = newAction("Prev Image", SLOT(openPrevImg()), "a", "prev", "Open the previous Image");
+    auto verify = newAction("Verify Image", SLOT(verifyImg()),"space", "verify", "Verify Image");
+    auto save = newAction("Save", SLOT(saveFile()),"Ctrl+S", "save", "Save the labels to a file", false);
+    auto save_format = newAction("&PascalVOC", SLOT(change_format()),"Ctrl+", "format_voc", "Change save format", true);
+    auto saveAs = newAction("Save As", SLOT(saveFileAs()),"Ctrl+Shift+S", "save-as", "Save the labels to a different file", false);
+    auto close = newAction("Close", SLOT(closeFile()), "Ctrl+W", "close", "Close the current file");
+    auto resetAll = newAction("Reset All", SLOT(resetAll()), "", "resetall", "Reset All");
+    auto color1 = newAction("Box Line Color", SLOT(chooseColor1()),"Ctrl+L", "color_line", "Choose Box line color");
+    auto createMode = newAction("Create\nRectBox", SLOT(__OnShapeModeChanged()),"w", "new", "Draw a new box", false);
+    auto editMode = newAction("&Edit\nRectBox", SLOT(__OnShapeModeChanged()),"Ctrl+J", "edit", "Move and edit Boxs", false);
+    auto create = newAction("Create\nRectBox", SLOT(createShape()),"w", "new", "Draw a new box", false);
+    connect(this, SIGNAL(sigCreateShape()), canvas, SLOT(OnCreateShape()));
+    auto deleteAction = newAction("Delete\nRectBox", SLOT(deleteSelectedShape()),"Delete", "delete", "Remove the box", false);
+    auto copy = newAction("Duplicate\nRectBox", SLOT(copySelectedShape()),"Ctrl+D", "copy", "Create a duplicate of the selected box",false);
+    auto advancedMode = newAction("Advanced Mode", SLOT(toggleAdvancedMode()), "Ctrl+Shift+A", "expert", "Swtich to advanced mode",true,true);
+    auto hideAll = newAction("&Hide\nRectBox", SLOT(togglePolygons()),"Ctrl+H", "hide", "Hide all bounding boxes",false);
+    auto showAll = newAction("&Show\nRectBox", SLOT(togglePolygons()),"Ctrl+A", "hide", "Show all bounding boxes",false);
+    auto help = newAction("Tutorial", SLOT(showTutorialDialog()), "", "help", "Show demo");
+    auto showInfo = newAction("Information", SLOT(showInfoDialog()), "", "help", "Information");
 
     auto zoom = new QWidgetAction(this);
     zoom->setDefaultWidget(zoomWidget);
@@ -161,11 +114,11 @@ _beginner = true;
         " %1 and %2 from the canvas.").arg(fmtShortcut("Ctrl+[-+]")).arg(fmtShortcut("Ctrl+Wheel")));
     zoomWidget->setEnabled(false);
 
-    auto zoomIn = newAction("zoomin", SLOT(addZoom),"Ctrl++", "zoom-in", "zoominDetail", false);
-    auto zoomOut = newAction("zoomout", SLOT(addZoom),"Ctrl+-", "zoom-out", "zoomoutDetail", false);
-    auto zoomOrg = newAction("originalsize", SLOT(setZoom),"Ctrl+=", "zoom", "originalsizeDetail", false);
-    auto fitWindow = newAction("fitWin", SLOT(setFitWindow),"Ctrl+F", "fit-window", "fitWinDetail",false,true);
-    auto fitWidth = newAction("fitWidth", SLOT(setFitWidth),"Ctrl+Shift+F", "fit-width", "fitWidthDetail",false,true);
+    auto zoomIn = newAction("zoomin", SLOT(addZoom()),"Ctrl++", "zoom-in", "zoominDetail", false);
+    auto zoomOut = newAction("zoomout", SLOT(addZoom()),"Ctrl+-", "zoom-out", "zoomoutDetail", false);
+    auto zoomOrg = newAction("originalsize", SLOT(setZoom()),"Ctrl+=", "zoom", "originalsizeDetail", false);
+    auto fitWindow = newAction("fitWin", SLOT(setFitWindow()),"Ctrl+F", "fit-window", "fitWinDetail",false,true);
+    auto fitWidth = newAction("fitWidth", SLOT(setFitWidth()),"Ctrl+Shift+F", "fit-width", "fitWidthDetail",false,true);
     QList<QObject* > zoomActions;
 //    # Group zoom controls into a list for easier toggling.
     zoomActions << zoomWidget<< zoomIn<< zoomOut<<zoomOrg<< fitWindow<< fitWidth;
@@ -179,11 +132,11 @@ _beginner = true;
     fun = std::bind(&MainWin::scaleManualZoom, this);
     scalers[MANUAL_ZOOM] = fun;
 
-    auto edit = newAction("Edit Label", SLOT(editLabel),"Ctrl+E", "edit", "Modify the label of the selected Box", false);
-    ui->m_iLablesWidget->SetEditAction(edit);
+    auto edit = newAction("Edit Label", SLOT(editLabel()),"Ctrl+E", "edit", "Modify the label of the selected Box", false);
+    ui->m_iLabelsWidget->SetEditAction(edit);
 
-    auto shapeLineColor = newAction("Shape Line Color", SLOT(chshapeLineColor),"","color_line", "Change the line color for this specific shape",false);
-    auto shapeFillColor = newAction("Shape Fill Color", SLOT(chshapeFillColor),"","color", "Change the fill color for this specific shape", false);
+    auto shapeLineColor = newAction("Shape Line Color", SLOT(chshapeLineColor()),"","color_line", "Change the line color for this specific shape",false);
+    auto shapeFillColor = newAction("Shape Fill Color", SLOT(chshapeFillColor()),"","color", "Change the fill color for this specific shape", false);
 
     QAction* labels = ui->m_iLabelsDock->toggleViewAction();
     labels->setText("Show/Hide Label Panel");
@@ -194,15 +147,14 @@ _beginner = true;
     QList<QObject *> labelMenuActions;
     labelMenuActions << edit << deleteAction;
     AddActions(labelMenu, labelMenuActions);
-    labelList->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(labelList, SIGNAL(labelList), this, SLOT(popLabelListMenu));
+
 
 //    # Draw squares/rectangles
     drawSquaresOption = new QAction("Draw Squares", this);
     drawSquaresOption->setShortcut(QString("Ctrl+Shift+R"));
     drawSquaresOption->setCheckable(true);
     drawSquaresOption->setChecked(Settings::GetInstance()->GetBool(SETTING_DRAW_SQUARE, false));
-    connect(drawSquaresOption, SIGNAL(triggered), this, SLOT(toogleDrawSquare));
+    connect(drawSquaresOption, SIGNAL(triggered(bool)), canvas, SLOT(OnDrawingShapeToSquare(bool)));
 
 //# Store actions for further handling.
     actions.save=save;
@@ -218,6 +170,10 @@ _beginner = true;
     actions.copy=copy,
     actions.createMode=createMode;
     actions.editMode=editMode;
+    actions.modeActionGroup = new QActionGroup(this);
+    actions.modeActionGroup->addAction(createMode);
+    actions.modeActionGroup->addAction(editMode);
+    actions.modeActionGroup->setExclusive(true);
     actions.advancedMode=advancedMode,
     actions.shapeLineColor=shapeLineColor;
     actions.shapeFillColor=shapeFillColor,
@@ -243,6 +199,7 @@ _beginner = true;
     menus.help= menu("&Help");
     menus.recentFiles= new QMenu("Open &Recent");
     menus.labelList=labelMenu;
+    ui->m_iLabelsWidget->SetLabelListMenu(menus.labelList);
 
 //    # Auto saving : Enable auto saving if pressing next
     autoSaving = new QAction("Auto Save mode", this);
@@ -274,7 +231,7 @@ _beginner = true;
 //    # Custom context menu for the canvas widget:
     AddActions(canvas->menus[false], actions.beginnerContext);
     tmpActions.clear();
-    AddActions(canvas->menus[true], tmpActions << newAction("&Copy here", SLOT(copyShape)) << newAction("&Move here", SLOT(moveShape)));
+    AddActions(canvas->menus[true], tmpActions << newAction("&Copy here", SLOT(copyShape())) << newAction("&Move here", SLOT(moveShape())));
 
     toolbar("Tools");
     actions.beginner << open << opendir << changeSavedir << openNextImg << openPrevImg << verify << save << save_format << nullptr << create << copy << deleteAction << nullptr <<
@@ -288,7 +245,6 @@ _beginner = true;
     statusBar()->show();
 
 //    # Application state.
-    image = new QImage();
     filePath = defaultFilename;
 //    self.recentFiles = [];
     maxRecent = 7;
@@ -345,7 +301,7 @@ _beginner = true;
 //        queueEvent(loadFile(filePath));
 
 //    # Callbacks:
-    connect(zoomWidget, SIGNAL(valueChanged(int)), this, SLOT(paintCanvas(int)));
+    connect(zoomWidget, SIGNAL(valueChanged(int)), canvas, SLOT(Paint(int)));
 
     populateModeActions();
 
@@ -433,12 +389,12 @@ ToolBar* MainWin::toolbar(QString title, QList<QObject *> actions){
 
 void MainWin::keyReleaseEvent(QKeyEvent *ev){
     if (ev->key() == Qt::Key_Control)
-        canvas->setDrawingShapeToSquare(false);
+        canvas->OnDrawingShapeToSquare(false);
 }
 void MainWin::keyPressEvent(QKeyEvent *ev){
     if (ev->key() == Qt::Key_Control){
 //        # Draw rectangle if Ctrl is pressed
-        canvas->setDrawingShapeToSquare(true);
+        canvas->OnDrawingShapeToSquare(true);
     }
 }
 
@@ -468,13 +424,15 @@ void MainWin::change_format(){
 
 }
 bool MainWin::noShapes(){
-    return itemsToShapes.size() != 0;
+    return ui->m_iLabelsWidget->NoShapes();
 }
 void MainWin::toggleAdvancedMode(bool value){
+    value = actions.advancedMode->isChecked();
+    qDebug() << "-------------------value" << value;
     _beginner = not value;
-    canvas->setEditing(true);
+    canvas->SetMode(Canvas::EDIT);
     populateModeActions();
-    ui->m_iLablesWidget->SetEditVisible(!value);
+    ui->m_iLabelsWidget->SetEditVisible(!value);
     if (value){
         actions.createMode->setEnabled(true);
         actions.editMode->setEnabled(false);
@@ -545,21 +503,14 @@ void MainWin::status(QString  message, int delay){
     statusBar()->showMessage(message, delay);
 }
 void MainWin::resetState(){
-    itemsToShapes.clear();
-    shapesToItems.clear();
-    labelList->clear();
+    ui->m_iLabelsWidget->ClearLabel();
     filePath = "";
     imageData.clear();
     labelFile = nullptr;
     canvas->resetState();
     labelCoordinates->clear();
 }
-QListWidgetItem* MainWin::currentItem(){
-    auto items = labelList->selectedItems();
-    if (items.size())
-        return items[0];
-    return nullptr;
-}
+
 void MainWin::addRecentFile(QString filePath){
     if (recentFiles.contains(filePath)){
         recentFiles.removeAll(filePath);
@@ -583,41 +534,39 @@ void MainWin::createShape(){
         qFatal("createShape must in beginner");
         return;
     }
-    canvas->setEditing(false);
     actions.create->setEnabled(false);
+    emit sigCreateShape();
 }
 void MainWin::toggleDrawingSensitive(bool drawing){
 //    """In the middle of drawing, toggling between modes should be disabled."""
     actions.editMode->setEnabled(not drawing);
-    if (! drawing && beginner()){
+    if (!drawing && beginner()){
 //        # Cancel creation.
         qDebug("Cancel creation.");
-        canvas->setEditing(true);
+        canvas->SetMode(Canvas::EDIT);
         canvas->restoreCursor();
         actions.create->setEnabled(true);
     }
 }
-void MainWin::toggleDrawMode(bool edit){
-    canvas->setEditing(edit);
-    actions.createMode->setEnabled(edit);
-    actions.editMode->setEnabled(!edit);
-}
-void MainWin::setCreateMode(){
-    if(!advanced()){
-        qFatal("setCreateMode must in advanced");
-        return;
-    }
-    toggleDrawMode(false);
-}
-void MainWin::setEditMode(){
-    if(!advanced()){
-        qFatal("setEditMode must in advanced");
-        return;
-    }
-    toggleDrawMode(true);
-    labelSelectionChanged();
 
+void MainWin::__OnShapeModeChanged(){
+    if(!advanced()){
+        qFatal("__OnShapeModeChanged must in advanced");
+        return;
+    }
+    QAction* pAction = qobject_cast<QAction*>(sender());
+    if (pAction == actions.createMode){
+        canvas->SetMode(Canvas::CREATE);
+        actions.createMode->setEnabled(false);
+        actions.editMode->setEnabled(true);
+    } else if(pAction == actions.editMode){
+        canvas->SetMode(Canvas::EDIT);
+        actions.createMode->setEnabled(true);
+        actions.editMode->setEnabled(false);
+        ui->m_iLabelsWidget->OnLabelSelectionChanged();
+    }
 }
+
 void MainWin::updateFileMenu(){
     QString currFilePath = filePath;
     auto menu = menus.recentFiles;
@@ -637,9 +586,7 @@ void MainWin::updateFileMenu(){
         menu->addAction(action);
     }
 }
-void MainWin::popLabelListMenu(QPointF point){
-    menus.labelList->exec(labelList->mapToGlobal(point.toPoint()));
-}
+
 void MainWin::editLabel(QListWidgetItem *item){
     if (! canvas->editing())
         return;
@@ -652,7 +599,7 @@ void MainWin::editLabel(QListWidgetItem *item){
 //# Tzutalin 20160906 : Add file list and dock to move faster
 }
 
-void MainWin::fileitemDoubleClicked(QListWidgetItem *item){
+void MainWin::fileItemDoubleClicked(QListWidgetItem *item){
     auto currIndex = mImgList.indexOf(item->text());
     if (currIndex < mImgList.size()){
         auto filename = mImgList[currIndex];
@@ -663,28 +610,8 @@ void MainWin::fileitemDoubleClicked(QListWidgetItem *item){
 //# Add chris
 }
 void MainWin::btnstate(int stat){
-//    """ Function to handle difficult exampless
-//    Update on each object """
-    if (!canvas->editing())
-        return;
-
-    auto item = currentItem();
-    if (!item) //# If not selected Item, take the first one
-        item = labelList->item(labelList->count()-1);
-
-    auto difficult = stat == Qt::Checked?true:false;
-
-    if (itemsToShapes.contains(item) && itemsToShapes[item] != nullptr){
-        auto shape = itemsToShapes[item];
-        if (difficult != shape->difficult){
-            shape->difficult = difficult;
-            setDirty();
-        }else{ // # User probably changed item visibility
-            canvas->setShapeVisible(shape, item->checkState() == Qt::Checked);
-        }
-    }
-
-//# React to canvas signals.
+    Q_UNUSED(stat)
+    setDirty();
 }
 void MainWin::shapeSelectionChanged(bool selected){
     if (_noSelectionSlot){
@@ -692,9 +619,9 @@ void MainWin::shapeSelectionChanged(bool selected){
     }else{
         auto shape = canvas->selectedShape;
         if (shape != nullptr)
-            shapesToItems[shape]->setSelected(true);
+            ui->m_iLabelsWidget->SelectShape(shape);
         else
-            labelList->clearSelection();
+            ui->m_iLabelsWidget->ClearSelection();
     }
     actions.deleteAction->setEnabled(selected);
     actions.copy->setEnabled(selected);
@@ -704,13 +631,7 @@ void MainWin::shapeSelectionChanged(bool selected){
 }
 void MainWin::addLabel(Shape* shape){
     shape->paintLabel = displayLabelOption->isChecked();
-    auto item = new QListWidgetItem(shape->label);
-    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    item->setCheckState(Qt::Checked);
-    item->setBackground(generateColorByText(shape->label));
-    itemsToShapes[item] = shape;
-    shapesToItems[shape] = item;
-    labelList->addItem(item);
+    ui->m_iLabelsWidget->AddLabel(shape);
     for (auto action : actions.onShapesPresent){
         if (qobject_cast<QMenu*>(action) != nullptr){
             qobject_cast<QMenu*>(action)->setEnabled(true);
@@ -719,16 +640,7 @@ void MainWin::addLabel(Shape* shape){
         }
     }
 }
-void MainWin::remLabel(Shape* shape){
-    if (shape == nullptr){
-//        # print('rm empty label')
-        return;
-    }
-    auto item = shapesToItems[shape];
-    labelList->takeItem(labelList->row(item));
-    delete shapesToItems.take(shape);
-    delete itemsToShapes.take(item);
-}
+
 void MainWin::loadLabels(QList<Shape*> shapes){
 //    auto s = [];
 //    for (auto s : shapes){
@@ -794,25 +706,10 @@ void MainWin::copySelectedShape(){
 }
 
 void MainWin::labelSelectionChanged(QListWidgetItem *item){
-    if (item != nullptr && canvas->editing()){
-        _noSelectionSlot = true;
-        canvas->selectShape(itemsToShapes[item]);
-        auto shape = itemsToShapes[item];
-//        # Add Chris
-        ui->m_iLabelsWidget->SetDifficult(shape->difficult);
-    }
+    _noSelectionSlot = true;
 }
 void MainWin::labelItemChanged(QListWidgetItem* item){
-    auto shape = itemsToShapes[item];
-    auto label = item->text();
-    if (label != shape->label){
-        shape->label = item->text();
-        shape->line_color = generateColorByText(shape->label);
-        setDirty();
-    }else{ // # User probably changed item visibility
-        canvas->setShapeVisible(shape, item->checkState() == Qt::Checked);
-    }
-//# Callback functions:
+    setDirty();
 }
 void MainWin::newShape(){
 //    """Pop-up and give focus to the label editor.
@@ -844,7 +741,7 @@ void MainWin::newShape(){
         auto shape = canvas->setLastLabel(text, generate_color, generate_color);
         addLabel(shape);
         if (beginner()){//  # Switch to edit mode.
-            canvas->setEditing(true);
+            canvas->SetMode(Canvas::EDIT);
             actions.create->setEnabled(true);
         }else{
             actions.editMode->setEnabled(true);
@@ -870,7 +767,15 @@ void MainWin::setZoom(int value){
     zoomWidget->setValue(value);
 }
 void MainWin::addZoom(int increment){
-    setZoom(zoomWidget->value() + increment);
+    QAction* pAction = qobject_cast<QAction*>(sender());
+    if (pAction == actions.zoomIn){
+        setZoom(zoomWidget->value() + 10);
+    } else if(pAction == actions.zoomOut){
+        setZoom(zoomWidget->value() + -10);
+    } else if (pAction == nullptr){
+        qDebug("---------increment=%d", increment);
+        setZoom(zoomWidget->value() + increment);
+    }
 }
 void MainWin::zoomRequest(int delta){
 //    # get the current scrollbar positions
@@ -937,8 +842,7 @@ void MainWin::setFitWidth(bool value){
     adjustScale();
 }
 void MainWin::togglePolygons(bool value){
-    for (auto item : itemsToShapes.keys())
-        item->setCheckState(value?Qt::Checked : Qt::Unchecked);
+    ui->m_iLabelsWidget->ToggleShapes(value);
 }
 
 void MainWin::adjustScale(bool initial){
@@ -959,9 +863,9 @@ bool MainWin::loadFile(QString filePath){
     auto unicodeFilePath = filePath;
 //    # Tzutalin 20160906 : Add file list and dock to move faster
 //    # Highlight the file item
-    if (unicodeFilePath != "" && fileListWidget->count() > 0){
+    if (unicodeFilePath != "" && ui->m_iFileListWidget->count() > 0){
         auto index = mImgList.indexOf(unicodeFilePath);
-        auto fileWidgetItem = fileListWidget->item(index);
+        auto fileWidgetItem = ui->m_iFileListWidget->item(index);
         fileWidgetItem->setSelected(true);
     }
 
@@ -980,23 +884,22 @@ bool MainWin::loadFile(QString filePath){
             canvas->verified = false;
         }
 
-        auto image = QImage::fromData(imageData);
+        auto image = QImage(unicodeFilePath);
         if (image.isNull()){
             errorMessage("Error opening file", QString("<p>Make sure <i>%1</i> is a valid image file.").arg(unicodeFilePath));
             status(QString("Error reading %1").arg(unicodeFilePath));
             return false;
         }
         status(QString("Loaded %1").arg(QFileInfo(unicodeFilePath).fileName()));
-        image = image;
+        canvas->image = image;
         filePath = unicodeFilePath;
-        auto pixmap = QPixmap::fromImage(image);
-        canvas->loadPixmap(pixmap);
+        canvas->loadPixmap();
         if (labelFile != nullptr)
             loadLabels(labelFile->shapes);
         setClean();
         canvas->setEnabled(true);
         adjustScale(true);
-        paintCanvas();
+        canvas->Paint(zoomWidget->value());
         addRecentFile(filePath);
         toggleActions(true);
 
@@ -1025,10 +928,7 @@ bool MainWin::loadFile(QString filePath){
         setWindowTitle(Settings::APP_NAME+" "+filePath);
 
 //        # Default : select last item if there is at least one item
-        if (labelList->count() > 0){
-            labelList->setCurrentItem(labelList->item(labelList->count()-1));
-            labelList->item(labelList->count()-1)->setSelected(true);
-        }
+        ui->m_iLabelsWidget->SelectLabel(ui->m_iLabelsWidget->LabelCount()-1);
 
         canvas->setFocus(Qt::MouseFocusReason);
         return true;
@@ -1041,15 +941,7 @@ bool MainWin::loadFile(QString filePath){
 //    }
 //    resizeEvent(event);
 //}
-void MainWin::paintCanvas(){
-    if (image->isNull()){
-        qFatal("cannot paint null image");
-        return;
-    }
-    canvas->scale = 0.01 * zoomWidget->value();
-    canvas->adjustSize();
-    canvas->update();
-}
+
 double MainWin::scaleFitWindow(){
 //    """Figure out the size of the pixmap in order to fit the main widget."""
     auto e = 2.0;//  # So that no scrollbars are generated.
@@ -1173,12 +1065,12 @@ void MainWin::importDirImages(QString dirpath){
     lastOpenDir = dirpath;
     dirname = dirpath;
     filePath = "";
-    fileListWidget->clear();
+    ui->m_iFileListWidget->clear();
     mImgList = scanAllImages(dirpath);
     openNextImg();
     for (auto imgPath : mImgList){
         auto item = new QListWidgetItem(imgPath);
-        fileListWidget->addItem(item);
+        ui->m_iFileListWidget->addItem(item);
     }
 }
 void MainWin::verifyImg(bool _value){
@@ -1187,7 +1079,7 @@ void MainWin::verifyImg(bool _value){
         labelFile->toggleVerify();
 
         canvas->verified = labelFile->verified;
-        paintCanvas();
+        canvas->Paint(zoomWidget->value());
         saveFile();
     }
 }
@@ -1253,6 +1145,7 @@ void MainWin::openNextImg(bool _value){
     }
 }
 void MainWin::openFile(bool _value){
+    Q_UNUSED(_value)
     if (!mayContinue())
         return;
     QString path = QFileInfo(filePath).dir().path();
@@ -1285,10 +1178,6 @@ void MainWin::saveFile(bool _value){
     }
 }
 void MainWin::saveFileAs(bool _value){
-    if (image->isNull()){
-        qFatal("cannot save empty image");
-        return;
-    }
     _saveFile(saveFileDialog());
 }
 QString MainWin::saveFileDialog(bool removeExt){
@@ -1363,7 +1252,7 @@ void MainWin::chooseColor1(){
     }
 }
 void MainWin::deleteSelectedShape(){
-    remLabel(canvas->deleteSelected());
+    ui->m_iLabelsWidget->RemLabel(canvas->deleteSelected());
     setDirty();
     if (noShapes()){
         for (auto action : actions.onShapesPresent){
@@ -1434,6 +1323,8 @@ void MainWin::togglePaintLabelsOption(){
         shape->paintLabel = displayLabelOption->isChecked();
     }
 }
-void MainWin::toogleDrawSquare(){
-    canvas->setDrawingShapeToSquare(drawSquaresOption->isChecked());
+
+void MainWin::showTutorialDialog()
+{
+
 }

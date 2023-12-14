@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QList>
 #include <QPointF>
+#include <QSharedPointer>
 #include "libs/shape.h"
 #define XML_EXT  ".xml"
 #define TXT_EXT  ".txt"

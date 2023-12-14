@@ -128,7 +128,7 @@ void Shape::paint(QPainter* painter){
 
 }
 void Shape::drawVertex(QPainterPath& path, int i){
-    float d = point_size / Shape::scale;
+    float d = Shape::point_size / Shape::scale;
     int shape = Shape::point_type;
     QPointF point = points[i];
     if (i == _highlightIndex){
@@ -198,6 +198,24 @@ Shape &Shape::operator=(const Shape &arr){
 //        this->difficult = arr.difficult;
     }
     return *this;
+}
+
+QPointF Shape::pointAt(int idx)
+{
+    if(idx < 0 && idx >= points.count()){
+        qCritical("idx(%d) is beyond range(0,%d)", idx, points.count());
+        return QPointF();
+    }
+    return points[idx];
+}
+
+void Shape::SetPoint(int idx, QPointF p)
+{
+    if(idx < 0 && idx >= points.count()){
+        qCritical("idx(%d) is beyond range(0,%d)", idx, points.count());
+        return;
+    }
+    points[idx] = p;
 }
 
 

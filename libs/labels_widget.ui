@@ -75,7 +75,11 @@
       </layout>
      </item>
      <item>
-      <widget class="QListWidget" name="m_iLabelListWidget"/>
+      <widget class="QListWidget" name="m_iLabelListWidget">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -87,7 +91,7 @@
    <sender>m_iDiffcBtn</sender>
    <signal>stateChanged(int)</signal>
    <receiver>LabelsWidget</receiver>
-   <slot>__DifficultChanged(int)</slot>
+   <slot>__OnDifficultChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>59</x>
@@ -103,7 +107,7 @@
    <sender>m_iLabelListWidget</sender>
    <signal>itemActivated(QListWidgetItem*)</signal>
    <receiver>LabelsWidget</receiver>
-   <slot>__OnLabelSelectionChanged(QListWidgetItem*)</slot>
+   <slot>OnLabelSelectionChanged(QListWidgetItem*)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>121</x>
@@ -119,7 +123,7 @@
    <sender>m_iLabelListWidget</sender>
    <signal>itemSelectionChanged()</signal>
    <receiver>LabelsWidget</receiver>
-   <slot>__OnLabelSelectionChanged()</slot>
+   <slot>OnLabelSelectionChanged()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>33</x>
@@ -163,12 +167,29 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>m_iLabelListWidget</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>LabelsWidget</receiver>
+   <slot>__OnPopLabelListMenu(QPoint)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>445</x>
+     <y>179</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>565</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
-  <slot>__DifficultChanged(int)</slot>
-  <slot>__OnLabelSelectionChanged(QListWidgetItem*)</slot>
-  <slot>__OnLabelSelectionChanged()</slot>
+  <slot>__OnDifficultChanged(int)</slot>
+  <slot>OnLabelSelectionChanged(QListWidgetItem*)</slot>
+  <slot>OnLabelSelectionChanged()</slot>
   <slot>__OnEditLable(QListWidgetItem*)</slot>
   <slot>__OnLabelChanged(QListWidgetItem*)</slot>
+  <slot>__OnPopLabelListMenu(QPoint)</slot>
  </slots>
 </ui>

@@ -28,6 +28,7 @@
 #include <QResizeEvent>
 #include <QCloseEvent>
 #include <QMessageBox>
+#include <QActionGroup>
 #include "libs/label_dialog.h"
 #include "libs/zoom_widget.h"
 #include "libs/color_dialog.h"
@@ -52,6 +53,7 @@ struct ActionSet{
     QAction* copy;
     QAction* createMode;
     QAction* editMode;
+    QActionGroup* modeActionGroup;
     QAction* advancedMode;
     QAction* shapeLineColor;
     QAction* shapeFillColor;
@@ -108,36 +110,23 @@ private:
     QMenu* menu(QString title, QList<QObject *> actions=QList<QObject *>());
     ToolBar* toolbar(QString title, QList<QObject *> actions=QList<QObject *>());
     void set_format(const QString strSaveFormat);
-    void change_format();
     bool noShapes();
     void populateModeActions();
     bool beginner();
     bool advanced();
     void setBeginner();
     void setAdvanced();
-    void setDirty();
     void setClean();
     void queueEvent(EventFunCB function);
     void status(QString  message, int delay=5000);
     void resetState();
-    QListWidgetItem* currentItem();
     void addRecentFile(QString filePath);
-    void showInfoDialog();
-    void createShape();
-    void setCreateMode();
-    void setEditMode();
-    void popLabelListMenu(QPointF point);
     void addLabel(Shape* shape);
-    void remLabel(Shape* shape);
     void loadLabels(QList<Shape*> shapes);
     bool saveLabels(QString annotationFilePath);
-    void copySelectedShape();
-    void newShape();
-    void paintCanvas();
     double scaleFitWidth();
     void loadRecent(QString filename);
     QStringList scanAllImages(QString folderPath);
-    void openDirDialog(bool _value=false, QString dirpath="");
     void importDirImages(QString dirpath);
     QString saveFileDialog(bool removeExt=true);
     void _saveFile(QString annotationFilePath);
@@ -145,28 +134,35 @@ private:
     bool discardChangesDialog();
     QMessageBox::StandardButton errorMessage(QString title, QString message);
     QString currentPath();
-    void chooseColor1();
-    void deleteSelectedShape();
-    void chshapeLineColor();
-    void chshapeFillColor();
-    void copyShape();
-    void moveShape();
     void loadPredefinedClasses(QString predefClassesFile);
     void loadPascalXMLByFilename(QString xmlPath);
     void loadYOLOTXTByFilename(QString txtPath);
-    void togglePaintLabelsOption();
-    void toogleDrawSquare();
 
 private slots:
+    void copyShape();
+    void moveShape();
+    void togglePaintLabelsOption();
+    void chshapeLineColor();
+    void chshapeFillColor();
+    void showInfoDialog();
+    void showTutorialDialog();
+    void copySelectedShape();
+    void deleteSelectedShape();
+    void createShape();
+    void __OnShapeModeChanged();
+    void chooseColor1();
+    void change_format();
+    void openDirDialog(bool _value=false, QString dirpath="");
+    void newShape();
+    void setDirty();
     void toggleAdvancedMode(bool value=true);
     void toggleActions(bool value=true);
     void btnstate(int stat);
     void labelSelectionChanged(QListWidgetItem *item = nullptr);
-    void editLabel(QListWidgetItem *item);
+    void editLabel(QListWidgetItem *item = nullptr);
     void labelItemChanged(QListWidgetItem *item);
-    void fileitemDoubleClicked(QListWidgetItem *item = nullptr);
+    void fileItemDoubleClicked(QListWidgetItem *item = nullptr);
     void toggleDrawingSensitive(bool drawing=true);
-    void toggleDrawMode(bool edit=true);
     void updateFileMenu();
     void shapeSelectionChanged(bool selected=false);
     void scrollRequest(double delta, int orientation);
@@ -175,7 +171,7 @@ private slots:
     void zoomRequest(int delta);
     void setFitWindow(bool value=true);
     void setFitWidth(bool value=true);
-    void togglePolygons(bool value);
+    void togglePolygons(bool value = false);
     bool loadFile(QString filePath="");
     void adjustScale(bool initial=false);
     void changeSavedirDialog(bool _value=false);
@@ -188,6 +184,9 @@ private slots:
     void saveFileAs(bool _value=false);
     void closeFile(bool _value=false);
     void resetAll();
+
+signals:
+    void sigCreateShape();
 
 private:
     Ui::MainWin *ui;
@@ -220,7 +219,6 @@ private:
     QAction* singleClassMode;
     QString lastLabel;
     QAction* displayLabelOption;
-    QImage* image;
     QStringList recentFiles;
     int maxRecent;
     QColor lineColor;
@@ -230,8 +228,6 @@ private:
     bool difficult;
     QString lastOpenDir;
     QLabel* labelCoordinates;
-    QMap<QListWidgetItem*, Shape*> itemsToShapes;
-    QMap<Shape*, QListWidgetItem*> shapesToItems;
     QString dirname;
     QStringList mImgList;
     bool dirty;

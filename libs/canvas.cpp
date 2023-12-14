@@ -7,7 +7,7 @@ Canvas::Canvas(QString *filePath, QWidget *parent)
     : QWidget(parent), epsilon(11.0)
 {
     this->filePath = filePath;
-    mode = Canvas::EDIT;
+    m_enMode = Canvas::EDIT;
 //    shapes = [];
     current = nullptr;
     selectedShape = nullptr;//  # save the selected shape here
@@ -35,6 +35,7 @@ Canvas::Canvas(QString *filePath, QWidget *parent)
     setFocusPolicy(Qt::WheelFocus);
     verified = false;
     drawSquare = false;
+    image = QImage();
 }
 
 Canvas::~Canvas()
@@ -63,22 +64,32 @@ bool Canvas::isVisible(Shape * shape){
 }
 
 bool Canvas::drawing(){
-    return mode == Canvas::CREATE;
+    return m_enMode == Canvas::CREATE;
 
 }
 bool Canvas::editing(){
-    return mode == Canvas::EDIT;
+    return m_enMode == Canvas::EDIT;
 }
 void Canvas::setEditing(bool value){
-    mode = value?Canvas::EDIT:Canvas::CREATE;
+    m_enMode = value?Canvas::EDIT:Canvas::CREATE;
     if(!value){  //# Create
         unHighlight();
         deSelectShape();
     }
     prevPoint = QPointF();
     repaint();
-
 }
+
+void Canvas::SetMode(Mode mode){
+    m_enMode = mode;
+    if(mode == CREATE){  //# Create
+        unHighlight();
+        deSelectShape();
+    }
+    prevPoint = QPointF();
+    repaint();
+}
+
 void Canvas::unHighlight(){
     if (hShape != nullptr)
         hShape->highlightClear();
@@ -118,7 +129,7 @@ void Canvas::finalise(){
         qCritical("no current");
         return;
     }
-    if (current->points[0] == current->points[-1]){
+    if (current->pointAt(0) == current->lastPoint()){
         current = nullptr;
         emit drawingPolygon(false);
         update();
@@ -128,10 +139,10 @@ void Canvas::finalise(){
     current->close();
     shapes.append(current);
     current = nullptr;
+    line->points.clear();
     setHiding(false);
     emit newShape();
     update();
-
 }
 bool Canvas::closeEnough(QPointF p1,QPointF p2){
 //    # d = distance(p1 - p2)
@@ -164,9 +175,10 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
     if (drawing()){
         overrideCursor(CURSOR_DRAW);
         if (current != nullptr){
+            qDebug("-----------current.pointCount()=%d", line->pointCount());
 //            # Display annotation width and height while drawing
-            double current_width = qAbs(current->points[0].x() - pos.x());
-            double current_height = qAbs(current->points[0].y() - pos.y());
+            double current_width = qAbs(current->pointAt(0).x() - pos.x());
+            double current_height = qAbs(current->pointAt(0).y() - pos.y());
             emit labelCoordinatesMsg(QString("Width: %1, Height: %2 / X: %3; Y: %4").arg(current_width).arg(current_height).arg(pos.x()).arg(pos.y()));
 
             QColor color = drawingLineColor;
@@ -178,25 +190,25 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
                 double clipped_x = qMin(qMax(double(0), pos.x()), double(size.width()));
                 double clipped_y = qMin(qMax(double(0), pos.y()), double(size.height()));
                 pos = QPointF(clipped_x, clipped_y);
-            }else if (current->points.size() > 1 && closeEnough(pos, current->points[0])){
+            }else if (current->pointCount() > 1 && closeEnough(pos, current->pointAt(0))){
 //                # Attract line to starting point and colorise to alert the
 //                # user:
-                QPointF pos = current->points[0];
+                QPointF pos = current->pointAt(0);
                 QColor color = current->line_color;
                 overrideCursor(CURSOR_POINT);
                 current->highlightVertex(0, Shape::NEAR_VERTEX);
             }
 
             if (drawSquare){
-                QPointF init_pos = current->points[0];
+                QPointF init_pos = current->pointAt(0);
                 double min_x = init_pos.x();
                 double min_y = init_pos.y();
                 double min_size = qMin(qAbs(pos.x() - min_x), qAbs(pos.y() - min_y));
                 double direction_x = pos.x() - min_x < 0 ? -1 : 1;
                 double direction_y = pos.y() - min_y < 0 ? -1 : 1;
-                line->points[1] = QPointF(min_x + direction_x * min_size, min_y + direction_y * min_size);
+                line->SetPoint(1,QPointF(min_x + direction_x * min_size, min_y + direction_y * min_size));
             }else{
-                line->points[1] = pos;
+                line->SetPoint(1,pos);
             }
 
             line->line_color = color;
@@ -230,8 +242,8 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
             repaint();
 
 //            # Display annotation width and height while moving vertex
-            QPointF point1 = hShape->points[1];
-            QPointF point3 = hShape->points[3];
+            QPointF point1 = hShape->pointAt(1);
+            QPointF point3 = hShape->pointAt(3);
             double current_width = qAbs(point1.x() - point3.x());
             double current_height = qAbs(point1.y() - point3.y());
             emit labelCoordinatesMsg(QString("Width: %1, Height: %2 / X: %3; Y: %4").arg(current_width).arg(current_height).arg(pos.x()).arg(pos.y()));
@@ -242,8 +254,8 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
             repaint();
 
 //            # Display annotation width and height while moving shape
-            QPointF point1 = selectedShape->points[1];
-            QPointF point3 = selectedShape->points[3];
+            QPointF point1 = selectedShape->pointAt(1);
+            QPointF point3 = selectedShape->pointAt(3);
             double current_width = qAbs(point1.x() - point3.x());
             double current_height = qAbs(point1.y() - point3.y());
             emit labelCoordinatesMsg(QString("Width: %d, Height: %d / X: %d; Y: %d").arg(current_width).arg(current_height).arg(pos.x()).arg(pos.y()));
@@ -372,10 +384,10 @@ void Canvas::hideBackroundShapes(bool value){
 }
 void Canvas::handleDrawing(QPointF pos){
   if (current != nullptr && current->reachMaxPoints() == false){
-      QPointF initPos = current->points[0];
+      QPointF initPos = current->pointAt(0);
       double minX = initPos.x();
       double minY = initPos.y();
-      QPointF targetPos = line->points[1];
+      QPointF targetPos = line->pointAt(1);
       double maxX = targetPos.x();
       double maxY = targetPos.y();
       current->addPoint(QPointF(maxX, minY));
@@ -395,12 +407,12 @@ void Canvas::setHiding(bool enable){
     _hideBackround = enable ? hideBackround : false;
 }
 bool Canvas::canCloseShape(){
-    return drawing() && current != nullptr && current->points.size() > 2;
+    return drawing() && current != nullptr && current->pointCount() > 2;
 }
 void Canvas::mouseDoubleClickEvent(QMouseEvent *ev){
 //    # We need at least 4 points here, since the mousePress handler
 //    # adds an extra one before this handler is called.
-    if (canCloseShape() and current->points.size() > 3){
+    if (canCloseShape() and current->pointCount() > 3){
         current->popPoint();
         finalise();
     }
@@ -444,14 +456,14 @@ void Canvas::calculateOffsets(Shape* shape,QPointF point){
 void Canvas::boundedMoveVertex(QPointF pos){
     int index = hVertex;
     Shape* shape = hShape;
-    QPointF point = shape->points[index];
+    QPointF point = shape->pointAt(index);
     if (outOfPixmap(pos))
         pos = intersectionPoint(point, pos);
 
     QPointF shiftPos;
     if (drawSquare){
         int opposite_point_index = (index + 2) % 4;
-        QPointF opposite_point = shape->points[opposite_point_index];
+        QPointF opposite_point = shape->pointAt(opposite_point_index);
 
         double min_size = qMin(qAbs(pos.x() - opposite_point.x()), abs(pos.y() - opposite_point.y()));
         double directionX = pos.x() - opposite_point.x()?-1 : 1;
@@ -535,71 +547,73 @@ Shape* Canvas::copySelectedShape(){
 void Canvas::boundedShiftShape(Shape* shape){
 //    # Try to move in one direction, and if it fails in another.
 //    # Give up if both fail.
-    QPointF point = shape->points[0];
+    QPointF point = shape->pointAt(0);
     QPointF offset = QPointF(2.0, 2.0);
     calculateOffsets(shape, point);
     prevPoint = point;
     if (!boundedMoveShape(shape, point - offset))
         boundedMoveShape(shape, point + offset);
 }
-//void Canvas::paintEvent(QPaintEvent *event){
-//    if (pixmap.isNull())
+void Canvas::paintEvent(QPaintEvent *event){
+    if (pixmap.isNull()){
+        return;
+    }
 //        return paintEvent(event);
 
-//    QPainter* p = _painter;
-//    p->begin(this);
-//    p->setRenderHint(QPainter::Antialiasing);
-//    p->setRenderHint(QPainter::HighQualityAntialiasing);
-//    p->setRenderHint(QPainter::SmoothPixmapTransform);
+    QPainter* p = _painter;
+    p->begin(this);
+    p->setRenderHint(QPainter::Antialiasing);
+    p->setRenderHint(QPainter::HighQualityAntialiasing);
+    p->setRenderHint(QPainter::SmoothPixmapTransform);
 
-//    p->scale(scale, scale);
-//    p->translate(offsetToCenter());
+    p->scale(scale, scale);
+    p->translate(offsetToCenter());
 
-//    p->drawPixmap(0, 0, pixmap);
-//    Shape::scale = scale;
-//    for(auto shape : shapes){
-//        if ((shape->selected || !_hideBackround) && isVisible(shape)){
-//            shape->fill = shape->selected || shape == hShape;
-//            shape->paint(p);
-//        }
-//    }
+    p->drawPixmap(0, 0, pixmap);
+    Shape::scale = scale;
+    for(auto shape : shapes){
+        if ((shape->selected || !_hideBackround) && isVisible(shape)){
+            shape->fill = shape->selected || shape == hShape;
+            shape->paint(p);
+        }
+    }
 
-//    if (current != nullptr){
-//        current->paint(p);
-//        line->paint(p);
-//    }
-//    if (selectedShapeCopy!= nullptr)
-//        selectedShapeCopy->paint(p);
+    if (current != nullptr){
+        current->paint(p);
+        line->paint(p);
+    }
+    if (selectedShapeCopy!= nullptr)
+        selectedShapeCopy->paint(p);
 
-////    # Paint rect
-//    if (current != nullptr && line->points.size() == 2){
-//        QPointF leftTop = line->points[0];
-//        QPointF rightBottom = line->points[1];
-//        double rectWidth = rightBottom.x() - leftTop.x();
-//        double rectHeight = rightBottom.y() - leftTop.y();
-//        p->setPen(drawingRectColor);
-//        QBrush brush(Qt::BDiagPattern);
-//        p->setBrush(brush);
-//        p->drawRect(leftTop.x(), leftTop.y(), rectWidth, rectHeight);
-//    }
-//    if (drawing() && !prevPoint.isNull() && !outOfPixmap(prevPoint)){
-//        p->setPen(QColor(0, 0, 0));
-//        p->drawLine(prevPoint.x(), 0, prevPoint.x(), pixmap.height());
-//        p->drawLine(0, prevPoint.y(), pixmap.width(), prevPoint.y());
-//    }
+//    # Paint rect
+    if (current != nullptr && line->pointCount() == 2){
+        QPointF leftTop = line->pointAt(0);
+        QPointF rightBottom = line->pointAt(1);
+        double rectWidth = rightBottom.x() - leftTop.x();
+        double rectHeight = rightBottom.y() - leftTop.y();
+        p->setPen(drawingRectColor);
+        QBrush brush(Qt::BDiagPattern);
+        p->setBrush(brush);
+        p->drawRect(leftTop.x(), leftTop.y(), rectWidth, rectHeight);
+    }
+    if (drawing() && !prevPoint.isNull() && !outOfPixmap(prevPoint)){
+        p->setPen(QColor(0, 0, 0));
+        p->drawLine(prevPoint.x(), 0, prevPoint.x(), pixmap.height());
+        p->drawLine(0, prevPoint.y(), pixmap.width(), prevPoint.y());
+    }
 
-//    setAutoFillBackground(true);
-//    if (verified){
-//        QPalette pal = palette();
-//        pal.setColor(backgroundRole(), QColor(184, 239, 38, 128));
-//        setPalette(pal);
-//    }else{
-//        QPalette pal = palette();
-//        pal.setColor(backgroundRole(), QColor(232, 232, 232, 255));
-//        setPalette(pal);
-//    }
-//    p->end();
-//}
+    setAutoFillBackground(true);
+    if (verified){
+        QPalette pal = palette();
+        pal.setColor(backgroundRole(), QColor(184, 239, 38, 128));
+        setPalette(pal);
+    }else{
+        QPalette pal = palette();
+        pal.setColor(backgroundRole(), QColor(232, 232, 232, 255));
+        setPalette(pal);
+    }
+    p->end();
+}
 
 void Canvas::minIntersectingEdges(double x1,double y1,double x2,double y2, QList<QPointF> points, double &minD, int &i, QPointF xy){
 //    """For each edge formed by `points', yield the intersection
@@ -707,32 +721,37 @@ void Canvas::keyPressEvent(QKeyEvent *ev){
         moveOnePixel("Down");
     }
 }
+
+void Canvas::OnCreateShape()
+{
+    SetMode(CREATE);
+}
 void Canvas::moveOnePixel(QString direction){
 //    # print(self.selectedShape.points)
     if (direction == "Left" && !moveOutOfBound(QPointF(-1.0, 0))){
 //        # print("move Left one pixel")
-        selectedShape->points[0] += QPointF(-1.0, 0);
-        selectedShape->points[1] += QPointF(-1.0, 0);
-        selectedShape->points[2] += QPointF(-1.0, 0);
-        selectedShape->points[3] += QPointF(-1.0, 0);
+        selectedShape->pointAt(0) += QPointF(-1.0, 0);
+        selectedShape->pointAt(1) += QPointF(-1.0, 0);
+        selectedShape->pointAt(2) += QPointF(-1.0, 0);
+        selectedShape->pointAt(3) += QPointF(-1.0, 0);
     }else if (direction == "Right" && !moveOutOfBound(QPointF(1.0, 0))){
 //        # print("move Right one pixel")
-        selectedShape->points[0] += QPointF(1.0, 0);
-        selectedShape->points[1] += QPointF(1.0, 0);
-        selectedShape->points[2] += QPointF(1.0, 0);
-        selectedShape->points[3] += QPointF(1.0, 0);
+        selectedShape->pointAt(0) += QPointF(1.0, 0);
+        selectedShape->pointAt(1) += QPointF(1.0, 0);
+        selectedShape->pointAt(2) += QPointF(1.0, 0);
+        selectedShape->pointAt(3) += QPointF(1.0, 0);
     }else if (direction == "Up" && !moveOutOfBound(QPointF(0, -1.0))){
 //        # print("move Up one pixel")
-        selectedShape->points[0] += QPointF(0, -1.0);
-        selectedShape->points[1] += QPointF(0, -1.0);
-        selectedShape->points[2] += QPointF(0, -1.0);
-        selectedShape->points[3] += QPointF(0, -1.0);
+        selectedShape->pointAt(0) += QPointF(0, -1.0);
+        selectedShape->pointAt(1) += QPointF(0, -1.0);
+        selectedShape->pointAt(2) += QPointF(0, -1.0);
+        selectedShape->pointAt(3) += QPointF(0, -1.0);
     }else if (direction == "Down" && !moveOutOfBound(QPointF(0, 1.0))){
 //        # print("move Down one pixel")
-        selectedShape->points[0] += QPointF(0, 1.0);
-        selectedShape->points[1] += QPointF(0, 1.0);
-        selectedShape->points[2] += QPointF(0, 1.0);
-        selectedShape->points[3] += QPointF(0, 1.0);
+        selectedShape->pointAt(0) += QPointF(0, 1.0);
+        selectedShape->pointAt(1) += QPointF(0, 1.0);
+        selectedShape->pointAt(2) += QPointF(0, 1.0);
+        selectedShape->pointAt(3) += QPointF(0, 1.0);
     }
     emit shapeMoved();
     repaint();
@@ -740,7 +759,7 @@ void Canvas::moveOnePixel(QString direction){
 bool Canvas::moveOutOfBound(QPointF step){
     QList<QPointF> points;
     for(int iLoop = 0; iLoop < 4; iLoop++){
-        points << selectedShape->points[iLoop] + step;
+        points << selectedShape->pointAt(iLoop) + step;
     }
     bool isTrue = false;
     for(int iLoop = 0; iLoop < 4; iLoop++){
@@ -785,10 +804,12 @@ void Canvas::resetAllLines(){
     emit drawingPolygon(false);
     update();
 }
-void Canvas::loadPixmap(QPixmap pixmap){
-    this->pixmap = pixmap;
-    shapes.clear();
-    repaint();
+void Canvas::loadPixmap(){
+    if(!image.isNull()){
+        this->pixmap = QPixmap::fromImage(image);;
+        shapes.clear();
+        repaint();
+    }
 }
 void Canvas::loadShapes(QList<Shape *> shapes){
     this->shapes = shapes;
@@ -820,6 +841,17 @@ void Canvas::resetState(){
     pixmap.detach();
     update();
 }
-void Canvas::setDrawingShapeToSquare(bool status){
+void Canvas::OnDrawingShapeToSquare(bool status){
     drawSquare = status;
+}
+
+void Canvas::Paint(int scaleVal)
+{
+    if (image.isNull()){
+        qFatal("cannot paint null image");
+        return;
+    }
+    scale = 0.01 * scaleVal;
+    adjustSize();
+    update();
 }

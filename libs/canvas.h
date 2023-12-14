@@ -26,7 +26,7 @@ public:
     explicit Canvas(QString *filePath, QWidget *parent = nullptr);
     ~Canvas();
 
-    enum { CREATE, EDIT };
+    enum Mode{ CREATE, EDIT };
     void setDrawingColor(QColor qcolor);
     bool isVisible(Shape * shape);
     bool drawing();
@@ -63,14 +63,19 @@ public:
     Shape* setLastLabel(QString text, QColor line_color  = QColor(), QColor fill_color = QColor());
     void undoLastLine();
     void resetAllLines();
-    void loadPixmap(QPixmap pixmap);
+    void loadPixmap();
     void loadShapes(QList<Shape *> shapes);
     void setShapeVisible(Shape * shape, bool value);
     int currentCursor();
     void overrideCursor(Qt::CursorShape cursor);
     void restoreCursor();
     void resetState();
-    void setDrawingShapeToSquare(bool status);
+    void SetMode(Mode mode);
+
+public slots:
+    void OnCreateShape();
+    void OnDrawingShapeToSquare(bool status);
+    void Paint(int val);
 
 protected:
     virtual void enterEvent(QEvent *event);
@@ -80,7 +85,7 @@ protected:
     virtual void mousePressEvent(QMouseEvent * ev);
     virtual void mouseReleaseEvent(QMouseEvent * ev);
     virtual void mouseDoubleClickEvent(QMouseEvent *event);
-//    virtual void paintEvent(QPaintEvent *event);
+    virtual void paintEvent(QPaintEvent *event);
     virtual void wheelEvent(QWheelEvent *event);
     virtual void keyPressEvent(QKeyEvent *event);
 
@@ -102,12 +107,13 @@ public:
     float scale;
     QPixmap pixmap;
     QList<Shape *> shapes;
+    QImage image;
 
 private:
     QString *filePath;
     double epsilon;
 
-    int mode;
+    Mode m_enMode;
     Shape *current;
     QColor drawingLineColor;
     QColor drawingRectColor;
