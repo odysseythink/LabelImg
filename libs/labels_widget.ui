@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LabelsWidget</class>
+ <widget class="QWidget" name="LabelsWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>563</width>
+    <height>467</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="spacing">
+    <number>5</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QToolButton" name="m_iEditBtn">
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="m_iDiffcBtn">
+       <property name="text">
+        <string>difficult</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="useDefaultLabelQHBoxLayout">
+       <item>
+        <widget class="QCheckBox" name="m_iUseDefaultLabelEdit">
+         <property name="text">
+          <string>Use default label</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="m_iDefaultLabelEdit"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QListWidget" name="m_iLabelListWidget"/>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>m_iDiffcBtn</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>LabelsWidget</receiver>
+   <slot>__DifficultChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>59</x>
+     <y>34</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-2</x>
+     <y>43</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_iLabelListWidget</sender>
+   <signal>itemActivated(QListWidgetItem*)</signal>
+   <receiver>LabelsWidget</receiver>
+   <slot>__OnLabelSelectionChanged(QListWidgetItem*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>121</x>
+     <y>153</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-6</x>
+     <y>68</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_iLabelListWidget</sender>
+   <signal>itemSelectionChanged()</signal>
+   <receiver>LabelsWidget</receiver>
+   <slot>__OnLabelSelectionChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>33</x>
+     <y>110</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-5</x>
+     <y>102</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_iLabelListWidget</sender>
+   <signal>itemDoubleClicked(QListWidgetItem*)</signal>
+   <receiver>LabelsWidget</receiver>
+   <slot>__OnEditLable(QListWidgetItem*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>154</x>
+     <y>110</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-6</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_iLabelListWidget</sender>
+   <signal>itemChanged(QListWidgetItem*)</signal>
+   <receiver>LabelsWidget</receiver>
+   <slot>__OnLabelChanged(QListWidgetItem*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>199</x>
+     <y>99</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>566</x>
+     <y>125</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>__DifficultChanged(int)</slot>
+  <slot>__OnLabelSelectionChanged(QListWidgetItem*)</slot>
+  <slot>__OnLabelSelectionChanged()</slot>
+  <slot>__OnEditLable(QListWidgetItem*)</slot>
+  <slot>__OnLabelChanged(QListWidgetItem*)</slot>
+ </slots>
+</ui>

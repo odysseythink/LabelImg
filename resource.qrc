@@ -1,0 +1,47 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/icons/app.icns</file>
+        <file>resources/icons/app.png</file>
+        <file>resources/icons/app.svg</file>
+        <file>resources/icons/cancel.png</file>
+        <file>resources/icons/close.png</file>
+        <file>resources/icons/color.png</file>
+        <file>resources/icons/color_line.png</file>
+        <file>resources/icons/copy.png</file>
+        <file>resources/icons/delete.png</file>
+        <file>resources/icons/done.png</file>
+        <file>resources/icons/done.svg</file>
+        <file>resources/icons/edit.png</file>
+        <file>resources/icons/expert1.png</file>
+        <file>resources/icons/expert2.png</file>
+        <file>resources/icons/eye.png</file>
+        <file>resources/icons/feBlend-icon.png</file>
+        <file>resources/icons/file.png</file>
+        <file>resources/icons/fit.png</file>
+        <file>resources/icons/fit-width.png</file>
+        <file>resources/icons/fit-window.png</file>
+        <file>resources/icons/format_voc.png</file>
+        <file>resources/icons/format_yolo.png</file>
+        <file>resources/icons/help.png</file>
+        <file>resources/icons/labels.png</file>
+        <file>resources/icons/labels.svg</file>
+        <file>resources/icons/new.png</file>
+        <file>resources/icons/next.png</file>
+        <file>resources/icons/objects.png</file>
+        <file>resources/icons/open.png</file>
+        <file>resources/icons/open.svg</file>
+        <file>resources/icons/prev.png</file>
+        <file>resources/icons/quit.png</file>
+        <file>resources/icons/resetall.png</file>
+        <file>resources/icons/save.png</file>
+        <file>resources/icons/save.svg</file>
+        <file>resources/icons/save-as.png</file>
+        <file>resources/icons/save-as.svg</file>
+        <file>resources/icons/undo.png</file>
+        <file>resources/icons/undo-cross.png</file>
+        <file>resources/icons/verify.png</file>
+        <file>resources/icons/zoom.png</file>
+        <file>resources/icons/zoom-in.png</file>
+        <file>resources/icons/zoom-out.png</file>
+    </qresource>
+</RCC>

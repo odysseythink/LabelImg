@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package pb;
+
+message PK_PASCAL_VOC_ANNOTATION_OBJ
+{
+	enum CMD_PASCAL_VOC_ANNOTATION_OBJ
+	{
+		UNKNOWN = 0;
+		CMD = 0x0A0B0001;
+	}
+	string objName = 1;
+	string objPose = 2;
+	int32  objTruncated = 3;
+	int32  objDifficult = 4;
+	int32  bndboxXmin = 5;
+	int32  bndboxYmin = 6;
+	int32  bndboxXmax = 7;
+	int32  bndboxYmax = 8;
+}
+
+message PK_PASCAL_VOC_ANNOTATION
+{
+	enum CMD_PASCAL_VOC_ANNOTATION
+	{
+		UNKNOWN = 0;
+		CMD = 0x0A0B0001;
+	}
+	string folder = 1;
+	string filename = 2;
+	string path = 3;
+	string sourcedatabase = 4;
+	int32 szWidth = 5;
+	int32 szHeight = 6;
+	int32 szDepth = 7;
+	int32 segmented = 8;
+	repeated PK_PASCAL_VOC_ANNOTATION_OBJ objs = 9;
+}
+
+
+message PK_PASCAL_VOC_SAVE_REQ
+{
+	enum CMD_PASCAL_VOC_SAVE_REQ
+	{
+		UNKNOWN = 0;
+		CMD = 0x0A0B0001;
+	}
+	string filename = 1;
+	PK_PASCAL_VOC_ANNOTATION annotation = 2;
+}
+
+message PK_PASCAL_VOC_SAVE_RSP
+{
+	enum CMD_PASCAL_VOC_SAVE_RSP
+	{
+		UNKNOWN = 0;
+		CMD = 0x0B0A0001;
+	}
+    string errmsg = 1;
+}
