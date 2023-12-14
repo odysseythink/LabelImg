@@ -104,7 +104,7 @@ protected:
 
 private:
     QAction* newAction(QString text, const char* slot = nullptr, QString shortcut = "", QString icon="",
-                  QString tip="", bool enabled=true, bool checkable=false);
+                  QString tip="", bool enabled=true, bool checkable=false, QWidget* parent = nullptr);
     double scaleFitWindow();
     double scaleManualZoom();
     QMenu* menu(QString title, QList<QObject *> actions=QList<QObject *>());
@@ -122,7 +122,7 @@ private:
     void resetState();
     void addRecentFile(QString filePath);
     void addLabel(Shape* shape);
-    void loadLabels(QList<Shape*> shapes);
+    void loadLabels(QList<QSharedPointer<Shape>> shapes);
     bool saveLabels(QString annotationFilePath);
     double scaleFitWidth();
     void loadRecent(QString filename);
@@ -142,8 +142,6 @@ private slots:
     void copyShape();
     void moveShape();
     void togglePaintLabelsOption();
-    void chshapeLineColor();
-    void chshapeFillColor();
     void showInfoDialog();
     void showTutorialDialog();
     void copySelectedShape();
@@ -158,7 +156,6 @@ private slots:
     void toggleAdvancedMode(bool value=true);
     void toggleActions(bool value=true);
     void btnstate(int stat);
-    void labelSelectionChanged(QListWidgetItem *item = nullptr);
     void editLabel(QListWidgetItem *item = nullptr);
     void labelItemChanged(QListWidgetItem *item);
     void fileItemDoubleClicked(QListWidgetItem *item = nullptr);

@@ -44,6 +44,20 @@ Shape::Shape(QString label, QColor line_color, bool difficult, bool paint_label,
     }
 }
 
+Shape::Shape(const Shape &s)
+{
+    if( this != &s){
+        this->label = s.label;
+        this->points = s.points;
+        this->fill = s.fill;
+        this->selected = s.selected;
+        this->_closed = s._closed;
+//        this->line_color = arr.line_color;
+//        this->fill_color = arr.fill_color;
+//        this->difficult = arr.difficult;
+    }
+}
+
 Shape::~Shape()
 {
     points.clear();
@@ -129,7 +143,7 @@ void Shape::paint(QPainter* painter){
 }
 void Shape::drawVertex(QPainterPath& path, int i){
     float d = Shape::point_size / Shape::scale;
-    int shape = Shape::point_type;
+//    int shapeType = Shape::point_type;
     QPointF point = points[i];
     if (i == _highlightIndex){
 //        size, shape = _highlight_settings[_highlight_mode];

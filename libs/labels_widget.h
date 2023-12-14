@@ -6,6 +6,7 @@
 #include <QListWidgetItem>
 #include <QMap>
 #include "libs/canvas.h"
+#include "libs/shape.h"
 
 namespace Ui {
 class LabelsWidget;
@@ -46,12 +47,15 @@ public:
 
 public slots:
     void OnLabelSelectionChanged(QListWidgetItem *item = nullptr);
+    void OnShapeSelected(Shape* shape);
 
 private slots:
     void __OnDifficultChanged(int stat);
     void __OnEditLable(QListWidgetItem *item);
     void __OnLabelChanged(QListWidgetItem *item);
     void __OnPopLabelListMenu(QPoint point);
+
+private:
 
 signals:
     void sigDifficultChanged(int);
@@ -65,6 +69,7 @@ private:
     QMenu* m_iLabelListMenu;
     QMap<QListWidgetItem*, Shape*> m_ItemsToShapesMap;
     QMap<Shape*, QListWidgetItem*> m_ShapesToItemsMap;
+    bool m_bNoSelectionSlot;
 };
 
 #endif // LABELS_WIDGET_H

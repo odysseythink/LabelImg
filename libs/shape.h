@@ -10,6 +10,7 @@
 #include <QPair>
 #include <QPainter>
 #include <QPainterPath>
+#include <QMetaType>
 
 #define sys_maxsize 2147483647
 
@@ -25,6 +26,7 @@ class Shape : public QObject
     Q_OBJECT
 public:
     explicit Shape(QString label="", QColor line_color=QColor(), bool difficult=false, bool paintLabel=false,QObject *parent = nullptr);
+    Shape(const Shape& s);
     ~Shape();
 
     enum {P_SQUARE, P_ROUND};
@@ -84,5 +86,7 @@ public:
     bool selected;
     bool fill;
 };
+
+Q_DECLARE_METATYPE(Shape);
 
 #endif // SHAPE_H

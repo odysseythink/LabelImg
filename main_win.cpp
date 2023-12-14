@@ -49,7 +49,6 @@ _beginner = true;
 
     ui->m_iLabelsWidget->SetCanvas(canvas);
     connect(ui->m_iLabelsWidget, SIGNAL(sigDifficultChanged(int)), this, SLOT(btnstate(int)));
-    connect(ui->m_iLabelsWidget, SIGNAL(sigLabelSelectionChanged(QListWidgetItem *)), this, SLOT(labelSelectionChanged(QListWidgetItem *)));
     connect(ui->m_iLabelsWidget, SIGNAL(sigEditLable(QListWidgetItem *)), this, SLOT(editLabel(QListWidgetItem*)));
     connect(ui->m_iLabelsWidget, SIGNAL(sigLabelChanged(QListWidgetItem *)), this, SLOT(labelItemChanged(QListWidgetItem*)));
 
@@ -71,8 +70,10 @@ _beginner = true;
 
     connect(canvas, SIGNAL(newShape()), this, SLOT(newShape()));
     connect(canvas, SIGNAL(shapeMoved()), this, SLOT(setDirty()));
-    connect(canvas, SIGNAL(selectionChanged(bool)), this, SLOT(shapeSelectionChanged(bool)));
+    connect(canvas, SIGNAL(sigSelectionChanged(bool)), this, SLOT(shapeSelectionChanged(bool)));
+    connect(canvas, SIGNAL(sigShapeSelected(Shape*)), ui->m_iLabelsWidget, SLOT(OnShapeSelected(Shape*)));
     connect(canvas, SIGNAL(drawingPolygon(bool)), this, SLOT(toggleDrawingSensitive(bool)));
+    connect(canvas, SIGNAL(sigDirty()), this, SLOT(setDirty()));
 
     setCentralWidget(ui->m_iCentralScrollArea);
 //    addDockWidget(Qt::RightDockWidgetArea, dock);
@@ -135,8 +136,8 @@ _beginner = true;
     auto edit = newAction("Edit Label", SLOT(editLabel()),"Ctrl+E", "edit", "Modify the label of the selected Box", false);
     ui->m_iLabelsWidget->SetEditAction(edit);
 
-    auto shapeLineColor = newAction("Shape Line Color", SLOT(chshapeLineColor()),"","color_line", "Change the line color for this specific shape",false);
-    auto shapeFillColor = newAction("Shape Fill Color", SLOT(chshapeFillColor()),"","color", "Change the fill color for this specific shape", false);
+    auto shapeLineColor = newAction("Shape Line Color", SLOT(OnChangeShapeLineColor()),"","color_line", "Change the line color for this specific shape",false, canvas);
+    auto shapeFillColor = newAction("Shape Fill Color", SLOT(OnChangeShapeFillColor()),"","color", "Change the fill color for this specific shape", false, canvas);
 
     QAction* labels = ui->m_iLabelsDock->toggleViewAction();
     labels->setText("Show/Hide Label Panel");
@@ -341,8 +342,9 @@ void MainWin::loadPredefinedClasses(QString predefClassesFile){
    file.close();
 }
 
-QAction *MainWin::newAction(QString text, const char *slot, QString shortcut, QString icon, QString tip, bool enabled, bool checkable)
+QAction *MainWin::newAction(QString text, const char *slot, QString shortcut, QString icon, QString tip, bool enabled, bool checkable, QWidget* parent)
 {
+    if (parent == nullptr) parent = this;
 //    """Create a new action and assign callbacks, shortcuts, etc."""
     QAction* a = new QAction(text, this);
     if (icon != "")
@@ -358,7 +360,7 @@ QAction *MainWin::newAction(QString text, const char *slot, QString shortcut, QS
         a->setStatusTip(tip);
     }
     if (slot != nullptr)
-        connect(a, SIGNAL(triggered()), this, slot);
+        connect(a, SIGNAL(triggered()), parent, slot);
 //        a.triggered.connect(slot);
     if (checkable)
         a->setCheckable(true);
@@ -613,15 +615,6 @@ void MainWin::btnstate(int stat){
     setDirty();
 }
 void MainWin::shapeSelectionChanged(bool selected){
-    if (_noSelectionSlot){
-        _noSelectionSlot = false;
-    }else{
-        auto shape = canvas->selectedShape;
-        if (shape != nullptr)
-            ui->m_iLabelsWidget->SelectShape(shape);
-        else
-            ui->m_iLabelsWidget->ClearSelection();
-    }
     actions.deleteAction->setEnabled(selected);
     actions.copy->setEnabled(selected);
     actions.edit->setEnabled(selected);
@@ -640,7 +633,7 @@ void MainWin::addLabel(Shape* shape){
     }
 }
 
-void MainWin::loadLabels(QList<Shape*> shapes){
+void MainWin::loadLabels(QList<QSharedPointer<Shape>> shapes){
 //    auto s = [];
 //    for (auto s : shapes){
 
@@ -704,9 +697,7 @@ void MainWin::copySelectedShape(){
     shapeSelectionChanged(true);
 }
 
-void MainWin::labelSelectionChanged(QListWidgetItem *item){
-    _noSelectionSlot = true;
-}
+
 void MainWin::labelItemChanged(QListWidgetItem* item){
     setDirty();
 }
@@ -1263,27 +1254,10 @@ void MainWin::deleteSelectedShape(){
         }
     }
 }
-void MainWin::chshapeLineColor(){
-    QColor color = colorDialog->getColor(lineColor, "Choose line color",
-                                      DEFAULT_LINE_COLOR);
-    if (color.isValid()){
-        canvas->selectedShape->line_color = color;
-        canvas->update();
-        setDirty();
-    }
-}
-void MainWin::chshapeFillColor(){
-    QColor color = colorDialog->getColor(fillColor, "Choose fill color",
-                                      DEFAULT_FILL_COLOR);
-    if (color.isValid()){
-        canvas->selectedShape->fill_color = color;
-        canvas->update();
-        setDirty();
-    }
-}
+
 void MainWin::copyShape(){
     canvas->endMove(true);
-    addLabel(canvas->selectedShape);
+    addLabel(canvas->GetSelectedShape());
     setDirty();
 }
 void MainWin::moveShape(){

@@ -14,14 +14,14 @@ class LabelFile
 public:
     LabelFile(QString filename = "");
     ~LabelFile();
-    void savePascalVocFormat(QString filename, QList<Shape*>& shapes, QString imagePath, QByteArray imageData);
+    void savePascalVocFormat(QString filename, QList<QSharedPointer<Shape> >& shapes, QString imagePath, QByteArray imageData);
     static void convertPoints2BndBox(QList<QPointF> points, int& xmin, int& ymin, int& xmax, int& ymax);
     static bool isLabelFile(QString filename);
     void toggleVerify();
 
 public:
     static QString suffix;
-    QList<Shape*>  shapes;
+    QList<QSharedPointer<Shape>>  shapes;
     QString imagePath;
     bool verified;
     QByteArray imageData;

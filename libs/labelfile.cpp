@@ -51,7 +51,7 @@ void LabelFile::convertPoints2BndBox(QList<QPointF> points, int& xmin, int& ymin
     ymax = int(d_ymax);
 }
 
-void LabelFile::savePascalVocFormat(QString filename, QList<Shape*>& shapes, QString imagePath, QByteArray imageData){
+void LabelFile::savePascalVocFormat(QString filename, QList<QSharedPointer<Shape> >& shapes, QString imagePath, QByteArray imageData){
     QFileInfo fi(imagePath);
     auto imgFolderPath = fi.path();
     QCompleter cp;

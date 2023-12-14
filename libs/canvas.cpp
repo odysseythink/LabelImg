@@ -2,6 +2,7 @@
 #include "common.h"
 #include <QtGlobal>
 #include <QApplication>
+#include "libs/color_dialog.h"
 
 Canvas::Canvas(QString *filePath, QWidget *parent)
     : QWidget(parent), epsilon(11.0)
@@ -424,7 +425,7 @@ void Canvas::selectShape(Shape* shape){
     shape->selected = true;
     selectedShape = shape;
     setHiding();
-    emit selectionChanged(true);
+    emit sigSelectionChanged(true);
     update();
 }
 void Canvas::selectShapePoint(QPointF point){
@@ -438,7 +439,7 @@ void Canvas::selectShapePoint(QPointF point){
         return;
     }
     for(int iLoop = shapes.size() - 1; iLoop >= 0; iLoop--){
-        Shape* shape = shapes.at(iLoop);
+        Shape* shape = shapes.at(iLoop).get();
         if(isVisible(shape) and shape->containsPoint(point)){
             selectShape(shape);
             calculateOffsets(shape, point);
@@ -519,14 +520,23 @@ void Canvas::deSelectShape(){
         selectedShape->selected = false;
         selectedShape = nullptr;
         setHiding(false);
-        emit selectionChanged(false);
+        emit sigSelectionChanged(false);
         update();
     }
 }
 Shape* Canvas::deleteSelected(){
     if (selectedShape != nullptr){
         Shape* shape = selectedShape;
-        shapes.removeAll(selectedShape);
+        QList<QSharedPointer<Shape>>::iterator iter = shapes.begin();
+        while (iter != shapes.end()) {
+            QSharedPointer<Shape> value = *iter;
+            if(value.get() == selectedShape){
+                iter = shapes.erase(iter);
+                value.clear();
+            } else {
+                ++iter;
+            }
+        }
         selectedShape = nullptr;
         update();
         return shape;
@@ -538,7 +548,7 @@ Shape* Canvas::copySelectedShape(){
         Shape* shape = new Shape();
         shape = selectedShape;
         deSelectShape();
-        shapes.append(shape);
+        shapes.append(QSharedPointer<Shape>(shape));
         shape->selected = true;
         selectedShape = shape;
         boundedShiftShape(shape);
@@ -574,7 +584,7 @@ void Canvas::paintEvent(QPaintEvent *event){
     p->drawPixmap(0, 0, pixmap);
     Shape::scale = scale;
     for(auto shape : shapes){
-        if ((shape->selected || !_hideBackround) && isVisible(shape)){
+        if ((shape->selected || !_hideBackround) && isVisible(shape.get())){
             shape->fill = shape->selected || shape == hShape;
             shape->paint(p);
         }
@@ -861,4 +871,23 @@ void Canvas::Paint(int scaleVal)
     scale = 0.01 * scaleVal;
     adjustSize();
     update();
+}
+
+void Canvas::OnChangeShapeLineColor(){
+    ColorDialog colorDialog(this);
+    QColor color = colorDialog.getColor(Shape::line_color, "Choose line color",
+                                      DEFAULT_LINE_COLOR);
+    if (color.isValid()){
+        SetSelectedShapeLineColor(color);
+        emit sigDirty();
+    }
+}
+void Canvas::OnChangeShapeFillColor(){
+    ColorDialog colorDialog(this);
+    QColor color = colorDialog.getColor(Shape::fill_color, "Choose fill color",
+                                      DEFAULT_FILL_COLOR);
+    if (color.isValid()){
+        SetSelectedShapeFillColor(color);
+        emit sigDirty();
+    }
 }

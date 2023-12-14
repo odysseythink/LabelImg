@@ -10,6 +10,7 @@ LabelsWidget::LabelsWidget(QWidget *parent) :
     ui->setupUi(this);
     m_iCanvas = nullptr;
     m_iLabelListMenu = nullptr;
+    m_bNoSelectionSlot = false;
 }
 
 LabelsWidget::~LabelsWidget()
@@ -173,7 +174,19 @@ void LabelsWidget::OnLabelSelectionChanged(QListWidgetItem *item){
         auto shape = m_ItemsToShapesMap[item];
 //        # Add Chris
         SetDifficult(shape->difficult);
-        emit sigLabelSelectionChanged(item);
+        m_bNoSelectionSlot = true;
+    }
+}
+
+void LabelsWidget::OnShapeSelected(Shape *shape)
+{
+    if (m_bNoSelectionSlot){
+        m_bNoSelectionSlot = false;
+    }else{
+        if (shape != nullptr)
+            SelectShape(shape);
+        else
+            ClearSelection();
     }
 }
 

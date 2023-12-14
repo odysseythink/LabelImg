@@ -70,11 +70,24 @@ public:
     void SetShapeVisible(Shape * shape, bool value);
     void resetState();
     void SetMode(Mode mode);
+    Shape* GetSelectedShape(){
+        return selectedShape;
+    }
+    void SetSelectedShapeLineColor(QColor& color){
+        selectedShape->line_color = color;
+        update();
+    }
+    void SetSelectedShapeFillColor(QColor& color){
+        selectedShape->line_color = color;
+        update();
+    }
 
 public slots:
     void OnCreateShape();
     void OnDrawingShapeToSquare(bool status);
     void Paint(int val);
+    void OnChangeShapeLineColor();
+    void OnChangeShapeFillColor();
 
 protected:
     virtual void enterEvent(QEvent *event);
@@ -97,15 +110,16 @@ signals:
     void zoomRequest(int);
     void scrollRequest(double, int);
     void newShape();
-    void selectionChanged(bool);
+    void sigSelectionChanged(bool);
+    void sigShapeSelected(Shape*);
     void shapeMoved();
     void drawingPolygon(bool);
     void labelCoordinatesMsg(QString);
+    void sigDirty();
 
 public:
     //    # Menus:
     QMap<bool,QMenu*> menus;
-    Shape *selectedShape;//  # save the selected shape here
     Shape *selectedShapeCopy;
     bool verified;
     float scale;
@@ -116,7 +130,7 @@ public:
 private:
     QString *filePath;
     double epsilon;
-
+    Shape *selectedShape;//  # save the selected shape here
     Mode m_enMode;
     QSharedPointer<Shape> current;
     QColor drawingLineColor;
