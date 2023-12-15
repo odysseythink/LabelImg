@@ -136,8 +136,10 @@ _beginner = true;
     auto edit = newAction("Edit Label", SLOT(editLabel()),"Ctrl+E", "edit", "Modify the label of the selected Box", false);
     ui->m_iLabelsWidget->SetEditAction(edit);
 
-    auto shapeLineColor = newAction("Shape Line Color", SLOT(OnChangeShapeLineColor()),"","color_line", "Change the line color for this specific shape",false, canvas);
-    auto shapeFillColor = newAction("Shape Fill Color", SLOT(OnChangeShapeFillColor()),"","color", "Change the fill color for this specific shape", false, canvas);
+    auto shapeLineColor = newAction("Shape Line Color", nullptr,"","color_line", "Change the line color for this specific shape",false, canvas);
+    connect(shapeLineColor, SIGNAL(triggered()), canvas, SLOT(OnChangeShapeLineColor()));
+    auto shapeFillColor = newAction("Shape Fill Color", nullptr,"","color", "Change the fill color for this specific shape", false, canvas);
+    connect(shapeLineColor, SIGNAL(triggered()), canvas, SLOT(OnChangeShapeFillColor()));
 
     QAction* labels = ui->m_iLabelsDock->toggleViewAction();
     labels->setText("Show/Hide Label Panel");
@@ -874,20 +876,18 @@ bool MainWin::loadFile(QString filePath){
             canvas->verified = false;
         }
 
-        auto image = QImage(unicodeFilePath);
-        if (image.isNull()){
+        auto image = new QImage(unicodeFilePath);
+        if (image->isNull()){
             errorMessage("Error opening file", QString("<p>Make sure <i>%1</i> is a valid image file.").arg(unicodeFilePath));
             status(QString("Error reading %1").arg(unicodeFilePath));
             return false;
         }
         status(QString("Loaded %1").arg(QFileInfo(unicodeFilePath).fileName()));
-        canvas->image = image;
+        canvas->SetImage(image);
         filePath = unicodeFilePath;
-        canvas->loadPixmap();
         if (labelFile != nullptr)
             loadLabels(labelFile->shapes);
         setClean();
-        canvas->setEnabled(true);
         adjustScale(true);
         canvas->Paint(zoomWidget->value());
         addRecentFile(filePath);
@@ -926,10 +926,10 @@ bool MainWin::loadFile(QString filePath){
     return false;
 }
 //void MainWin::resizeEvent(QResizeEvent* event){
-//    if (canvas != nullptr && !image->isNull() && zoomMode != MANUAL_ZOOM){
+//    if (canvas != nullptr && zoomMode != MANUAL_ZOOM){
 //        adjustScale();
 //    }
-//    resizeEvent(event);
+////    resizeEvent(event);
 //}
 
 double MainWin::scaleFitWindow(){

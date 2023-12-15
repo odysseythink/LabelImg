@@ -156,7 +156,7 @@ void LabelsWidget::__OnDifficultChanged(int stat)
             shape->difficult = difficult;
             emit sigDifficultChanged(stat);
         }else{ // # User probably changed item visibility
-            m_iCanvas->SetShapeVisible(shape, item->checkState() == Qt::Checked);
+            shape->SetVisible(item->checkState() == Qt::Checked);
         }
     }
 
@@ -207,7 +207,7 @@ void LabelsWidget::__OnLabelChanged(QListWidgetItem *item)
             shape->line_color = generateColorByText(shape->label);
             emit sigLabelChanged(item);
         }else{ // # User probably changed item visibility
-            m_iCanvas->SetShapeVisible(shape, item->checkState() == Qt::Checked);
+            shape->SetVisible(item->checkState() == Qt::Checked);
         }
     //# Callback functions:
     }

@@ -57,6 +57,8 @@ public:
         return points.count();
     }
     void SetPoint(int idx, QPointF p);
+    bool Visible() const;
+    void SetVisible(bool visible);
 
 signals:
 
@@ -66,6 +68,7 @@ private:
     QMap<int, QPair<float, int> > _highlightSettings;
 
     bool _closed;
+    bool m_bVisible;
 
 public:
    bool paintLabel;

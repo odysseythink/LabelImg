@@ -25,12 +25,11 @@ class Canvas : public QWidget
     Q_OBJECT
 
 public:
-    explicit Canvas(QString *filePath, QWidget *parent = nullptr);
+    explicit Canvas(QString *m_iFilePath, QWidget *parent = nullptr);
     ~Canvas();
 
     enum Mode{ CREATE, EDIT };
     void setDrawingColor(QColor qcolor);
-    bool isVisible(Shape * shape);
     bool drawing();
     bool editing();
     void setEditing(bool value=true);
@@ -45,7 +44,6 @@ public:
     virtual QSize sizeHint() const;
 //    virtual QSize minimumSizeHint() const;
     void endMove(bool copy=false);
-    void hideBackroundShapes(bool value);
     void handleDrawing(QPointF pos);
     void setHiding(bool enable=true);
     bool canCloseShape();
@@ -67,19 +65,32 @@ public:
     void resetAllLines();
     void loadPixmap();
     void SetShapes(QList<QSharedPointer<Shape> > shapes);
-    void SetShapeVisible(Shape * shape, bool value);
     void resetState();
     void SetMode(Mode mode);
     Shape* GetSelectedShape(){
-        return selectedShape;
+        if (m_nSelectedShape == -1){
+            return nullptr;
+        }
+        return shapes[m_nSelectedShape].get();
     }
     void SetSelectedShapeLineColor(QColor& color){
-        selectedShape->line_color = color;
+        if (m_nSelectedShape == -1){
+            return;
+        }
+        shapes[m_nSelectedShape]->line_color = color;
         update();
     }
     void SetSelectedShapeFillColor(QColor& color){
-        selectedShape->line_color = color;
+        if (m_nSelectedShape == -1){
+            return;
+        }
+        shapes[m_nSelectedShape]->line_color = color;
         update();
+    }
+    void SetImage(QImage* img){
+        m_iImage = img;
+        loadPixmap();
+        setEnabled(true);
     }
 
 public slots:
@@ -120,37 +131,36 @@ signals:
 public:
     //    # Menus:
     QMap<bool,QMenu*> menus;
-    Shape *selectedShapeCopy;
     bool verified;
-    float scale;
     QPixmap pixmap;
     QList<QSharedPointer<Shape> > shapes;
-    QImage image;
+
 
 private:
-    QString *filePath;
-    double epsilon;
-    Shape *selectedShape;//  # save the selected shape here
+    float m_nScale;
+    QImage* m_iImage;
+    QSharedPointer<Shape> m_iSelectedShapeCopy;
+    QString *m_iFilePath;
+    double m_nEpsilon;
+    int m_nSelectedShape;//  # save the selected shape here
     Mode m_enMode;
-    QSharedPointer<Shape> current;
-    QColor drawingLineColor;
-    QColor drawingRectColor;
-    QSharedPointer<Shape> line;
-    QPointF prevPoint;
-    QPair<QPointF, QPointF> offsets;
-    int label_font_size;
-    QMap<Shape *, bool> visible;
-    bool _hideBackround;
-    bool hideBackround;
-    Shape *hShape;
-    int hVertex;
-    QPainter* _painter;
-    Qt::CursorShape _cursor;
+    QSharedPointer<Shape> m_iCurrentShape;
+    QColor m_DrawingLineColor;
+    QColor m_DrawingRectColor;
+    QSharedPointer<Shape> m_iCurrentLineShape;
+    QPointF m_PrevPoint;
+    QPointF m_arrayOffsets[2];
+    int m_nlabelFontSize;
+    bool m_bHideBackround;
+    int m_nHighlightShape;
+    int m_nHightlightVertex;
+    QPainter* m_iPainter;
+    Qt::CursorShape m_CursorShape;
 //    # Set widget options.
-    bool drawSquare;
+    bool m_bDrawSquare;
 
 //    # initialisation for panning
-    QPointF pan_initial_pos;
+    QPointF m_PanInitialPos;
 };
 
 #endif // CANVAS_H

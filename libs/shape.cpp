@@ -18,7 +18,7 @@ int Shape::difficult = 0;
 
 
 Shape::Shape(QString label, QColor line_color, bool difficult, bool paint_label,QObject *parent)
-    : QObject(parent)
+    : QObject(parent), m_bVisible(true)
 {
     this->label = label;
 //    points = [];
@@ -42,6 +42,7 @@ Shape::Shape(QString label, QColor line_color, bool difficult, bool paint_label,
     } else {
         Shape::line_color = DEFAULT_LINE_COLOR;
     }
+
 }
 
 Shape::Shape(const Shape &s)
@@ -230,6 +231,16 @@ void Shape::SetPoint(int idx, QPointF p)
         return;
     }
     points[idx] = p;
+}
+
+bool Shape::Visible() const
+{
+    return m_bVisible;
+}
+
+void Shape::SetVisible(bool visible)
+{
+    m_bVisible = visible;
 }
 
 
