@@ -29,6 +29,7 @@
 #include <QCloseEvent>
 #include <QMessageBox>
 #include <QActionGroup>
+#include <QFileSystemModel>
 #include "libs/label_dialog.h"
 #include "libs/zoom_widget.h"
 #include "libs/color_dialog.h"
@@ -120,7 +121,7 @@ private:
     void queueEvent(EventFunCB function);
     void status(QString  message, int delay=5000);
     void resetState();
-    void addRecentFile(QString filePath);
+    void addRecentFile(QString m_CurrentFilePath);
     void addLabel(Shape* shape);
     void loadLabels(QList<QSharedPointer<Shape>> shapes);
     bool saveLabels(QString annotationFilePath);
@@ -169,7 +170,7 @@ private slots:
     void setFitWindow(bool value=true);
     void setFitWidth(bool value=true);
     void togglePolygons(bool value = false);
-    bool loadFile(QString filePath="");
+    bool loadFile(QString m_CurrentFilePath="");
     void adjustScale(bool initial=false);
     void changeSavedirDialog(bool _value=false);
     void openAnnotationDialog(bool _value=false);
@@ -203,7 +204,7 @@ private:
     ZoomWidget* zoomWidget;
     ColorDialog* colorDialog;
     Canvas* canvas;
-    QString filePath;
+    QString m_CurrentFilePath;
     QMap<Qt::Orientation, QScrollBar *> scrollBars;
     QScrollArea *scrollArea;
     int dockFeatures;
@@ -233,5 +234,6 @@ private:
     QByteArray imageData;
     LabelFile* labelFile;
     QString prevLabelText;
+    QFileSystemModel m_iFileListView;
 };
 #endif // MAINWIN_H

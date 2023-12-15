@@ -5,7 +5,7 @@
 #include "libs/color_dialog.h"
 
 Canvas::Canvas(QString *filePath, QWidget *parent)
-    : QWidget(parent), m_nEpsilon(11.0)
+    : QWidget(parent), m_nEpsilon(11.0), m_strImageFilename("")
 {
     this->m_iFilePath = filePath;
     m_enMode = Canvas::EDIT;
@@ -19,7 +19,7 @@ Canvas::Canvas(QString *filePath, QWidget *parent)
     m_PrevPoint = QPointF();
     m_arrayOffsets[0]= QPointF();
     m_arrayOffsets[1]= QPointF();
-    scale = 1.0;
+    m_nScale = 1.0;
     pixmap = QPixmap();
     m_bHideBackround = false;
     m_nHighlightShape = -1;
@@ -101,11 +101,11 @@ bool Canvas::selectedVertex(){
 
 QPointF Canvas::transformPos(QPointF point){
 //    """Convert from widget-logical coordinates to painter-logical coordinates."""
-    return point / scale - offsetToCenter();
+    return point / m_nScale - offsetToCenter();
 }
 
 QPointF Canvas::offsetToCenter(){
-    float s = scale;
+    float s = m_nScale;
     QSize area = size();
     double w = pixmap.width() * s;
     double h = pixmap.height() * s;
@@ -173,7 +173,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
     if (drawing()){
         __OverrideCursor(CURSOR_DRAW);
         if (!m_iCurrentShape.isNull()){
-            qDebug("-----------current.pointCount()=%d", m_iCurrentLineShape->pointCount());
+//            qDebug("-----------current.pointCount()=%d", m_iCurrentLineShape->pointCount());
 //            # Display annotation width and height while drawing
             double current_width = qAbs(m_iCurrentShape.get()->pointAt(0).x() - pos.x());
             double current_height = qAbs(m_iCurrentShape.get()->pointAt(0).y() - pos.y());
@@ -573,14 +573,14 @@ void Canvas::paintEvent(QPaintEvent *event){
     p->setRenderHint(QPainter::HighQualityAntialiasing);
     p->setRenderHint(QPainter::SmoothPixmapTransform);
 
-    p->scale(scale, scale);
+    p->scale(m_nScale, m_nScale);
     p->translate(offsetToCenter());
 
     p->drawPixmap(0, 0, pixmap);
-    Shape::scale = scale;
+    Shape::scale = m_nScale;
     for(auto shape : shapes){
         if ((shape->selected || !m_bHideBackround) && shape->Visible()){
-            shape->fill = shape->selected || shape == shapes[m_nHighlightShape].get();
+            shape->fill = shape->selected |shape == (m_nHighlightShape>=0?shapes[m_nHighlightShape].get():nullptr);
             shape->paint(p);
         }
     }
@@ -788,7 +788,7 @@ Shape* Canvas::setLastLabel(QString text, QColor line_color, QColor fill_color){
 
       return shapes[shapes.size()-1].get();
 }
-void Canvas::undoLastLine(){
+void Canvas::UndoLastLine(){
     if (shapes.size() == 0){
         qCritical("empty shapes");
         return;
@@ -798,7 +798,7 @@ void Canvas::undoLastLine(){
     m_iCurrentLineShape->points <<m_iCurrentShape->points[m_iCurrentShape->points.size()-1] << m_iCurrentShape->points[0];
     emit drawingPolygon(true);
 }
-void Canvas::resetAllLines(){
+void Canvas::ResetAllLines(){
     if (shapes.size() == 0){
         qCritical("empty shapes");
         return;
@@ -811,7 +811,7 @@ void Canvas::resetAllLines(){
     emit drawingPolygon(false);
     update();
 }
-void Canvas::loadPixmap(){
+void Canvas::__LoadPixmap(){
     if(m_iImage != nullptr && !m_iImage->isNull()){
         this->pixmap = QPixmap::fromImage(*m_iImage);;
         shapes.clear();
@@ -860,7 +860,7 @@ void Canvas::Paint(int scaleVal)
         qFatal("cannot paint null image");
         return;
     }
-    scale = 0.01 * scaleVal;
+    m_nScale = 0.01 * scaleVal;
     adjustSize();
     update();
 }

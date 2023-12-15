@@ -52,7 +52,7 @@ type PascalVocAnnotation struct {
 }
 
 func (a *PascalVocAnnotation) Write(filename string) error {
-	bintmp, err := xml.Marshal(a)
+	bintmp, err := xml.MarshalIndent(a, "", "\t")
 	if err != nil {
 		log.Printf("[PascalVocAnnotation write] xml.Marshal(%#v) failed:%v\n", a, err)
 		return fmt.Errorf("[PascalVocAnnotation write] xml.Marshal(%#v) failed:%v", a, err)

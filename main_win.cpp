@@ -40,7 +40,7 @@ _noSelectionSlot = false;
 _beginner = true;
 //self.screencastViewer = self.getAvailableScreencastViewer();
 //self.screencast = "https://youtu.be/p0nR2YsCY_U";
-    canvas = new Canvas(&filePath, this);
+    canvas = new Canvas(&m_CurrentFilePath, this);
 
 //    # Load predefined classes to the list
     loadPredefinedClasses(defaultPrefdefClassFile);
@@ -248,7 +248,7 @@ _beginner = true;
     statusBar()->show();
 
 //    # Application state.
-    filePath = defaultFilename;
+    m_CurrentFilePath = defaultFilename;
 //    self.recentFiles = [];
     maxRecent = 7;
 //    self.lineColor = None;
@@ -313,8 +313,8 @@ _beginner = true;
     statusBar()->addPermanentWidget(labelCoordinates);
 
 //    # Open Dir if deafult file
-    if (filePath != "" && QFileInfo(filePath).isDir())
-        openDirDialog(false, filePath);
+    if (m_CurrentFilePath != "" && QFileInfo(m_CurrentFilePath).isDir())
+        openDirDialog(false, m_CurrentFilePath);
 }
 
 MainWin::~MainWin()
@@ -508,7 +508,7 @@ void MainWin::status(QString  message, int delay){
 }
 void MainWin::resetState(){
     ui->m_iLabelsWidget->ClearLabel();
-    filePath = "";
+    m_CurrentFilePath = "";
     imageData.clear();
     labelFile = nullptr;
     canvas->resetState();
@@ -571,7 +571,7 @@ void MainWin::__OnShapeModeChanged(){
 }
 
 void MainWin::updateFileMenu(){
-    QString currFilePath = filePath;
+    QString currFilePath = m_CurrentFilePath;
     auto menu = menus.recentFiles;
     menu->clear();
     QStringList files;
@@ -680,17 +680,16 @@ bool MainWin::saveLabels(QString annotationFilePath){
     if (usingPascalVocFormat){
         if (!annotationFilePath.toLower().endsWith(".xml"))
             annotationFilePath += XML_EXT;
-        labelFile->savePascalVocFormat(annotationFilePath, canvas->shapes, filePath, imageData);
+        labelFile->savePascalVocFormat(annotationFilePath, canvas->shapes, m_CurrentFilePath, imageData);
     }else if (usingYoloFormat){
         if (!annotationFilePath.toLower().endsWith(".txt"))
             annotationFilePath += TXT_EXT;
-//        labelFile->saveYoloFormat(annotationFilePath, shapes, self.filePath, self.imageData, self.labelHist,
-//                                           self.lineColor.getRgb(), self.fillColor.getRgb());
+        labelFile->saveYoloFormat(annotationFilePath, canvas->shapes, m_CurrentFilePath, imageData, labelHist);
     }else{
 //        labelFile.save(annotationFilePath, shapes, self.filePath, self.imageData,
 //                            self.lineColor.getRgb(), self.fillColor.getRgb());
     }
-    qDebug() << QString("Image:%1 -> Annotation:%2").arg(filePath).arg(annotationFilePath);
+    qDebug() << QString("Image:%1 -> Annotation:%2").arg(m_CurrentFilePath).arg(annotationFilePath);
     return true;
 }
 void MainWin::copySelectedShape(){
@@ -848,22 +847,21 @@ bool MainWin::loadFile(QString filePath){
     canvas->setEnabled(false);
     if (filePath == "")
         filePath = Settings::GetInstance()->Get(SETTING_FILENAME, QString(""));
-
+    m_CurrentFilePath = filePath;
 //    # Make sure that filePath is a regular python string, rather than QString
 //    filePath = ustr(filePath);
 
-    auto unicodeFilePath = filePath;
 //    # Tzutalin 20160906 : Add file list and dock to move faster
 //    # Highlight the file item
-    if (unicodeFilePath != "" && ui->m_iFileListWidget->count() > 0){
-        auto index = mImgList.indexOf(unicodeFilePath);
+    if (filePath != "" && ui->m_iFileListWidget->count() > 0){
+        auto index = mImgList.indexOf(filePath);
         auto fileWidgetItem = ui->m_iFileListWidget->item(index);
         fileWidgetItem->setSelected(true);
     }
 
-    if (unicodeFilePath != "" && QFileInfo(unicodeFilePath).exists()){
-        if (LabelFile::isLabelFile(unicodeFilePath)){
-            labelFile = new LabelFile(unicodeFilePath);
+    if (filePath != "" && QFileInfo(filePath).exists()){
+        if (LabelFile::isLabelFile(filePath)){
+            labelFile = new LabelFile(filePath);
             imageData = labelFile->imageData;
 //            lineColor = QColor(*self.labelFile.lineColor);
 //            fillColor = QColor(*self.labelFile.fillColor);
@@ -871,20 +869,18 @@ bool MainWin::loadFile(QString filePath){
         }else{
 //            # Load image:
 //            # read data first and store for saving into label file.
-//            self.imageData = read(unicodeFilePath, None);
+//            self.imageData = read(filePath, None);
             labelFile = nullptr;
             canvas->verified = false;
         }
 
-        auto image = new QImage(unicodeFilePath);
-        if (image->isNull()){
-            errorMessage("Error opening file", QString("<p>Make sure <i>%1</i> is a valid image file.").arg(unicodeFilePath));
-            status(QString("Error reading %1").arg(unicodeFilePath));
+        if (!canvas->SetImage(filePath)){
+            errorMessage("Error opening file", QString("<p>Make sure <i>%1</i> is a valid image file.").arg(filePath));
+            status(QString("Error reading %1").arg(filePath));
             return false;
         }
-        status(QString("Loaded %1").arg(QFileInfo(unicodeFilePath).fileName()));
-        canvas->SetImage(image);
-        filePath = unicodeFilePath;
+        status(QString("Loaded %1").arg(QFileInfo(filePath).fileName()));
+        filePath = filePath;
         if (labelFile != nullptr)
             loadLabels(labelFile->shapes);
         setClean();
@@ -956,7 +952,7 @@ void MainWin::closeEvent(QCloseEvent* event){
         event->ignore();
 //    # If it loads images from dir, don't load it at the begining
     if (dirname == "")
-        Settings::GetInstance()->Set(SETTING_FILENAME, filePath);
+        Settings::GetInstance()->Set(SETTING_FILENAME, m_CurrentFilePath);
     else
         Settings::GetInstance()->Set(SETTING_FILENAME, "");
 
@@ -1020,13 +1016,13 @@ void MainWin::changeSavedirDialog(bool _value){
     statusBar()->show();
 }
 void MainWin::openAnnotationDialog(bool _value){
-    if (filePath == ""){
+    if (m_CurrentFilePath == ""){
         statusBar()->showMessage("Please select image first");
         statusBar()->show();
         return;
     }
 
-    QString path = (filePath != "" ? QFileInfo(filePath).dir().path() : ".");
+    QString path = (m_CurrentFilePath != "" ? QFileInfo(m_CurrentFilePath).dir().path() : ".");
     if (usingPascalVocFormat){
         QString filters = QString("Open Annotation XML file (*.xml)");
         QString filename = QFileDialog::getOpenFileName(this,QString("%1 - Choose a xml file").arg(Settings::APP_NAME), path, filters);
@@ -1041,7 +1037,7 @@ void MainWin::openDirDialog(bool _value, QString dirpath){
     if (lastOpenDir != "" && QFileInfo(lastOpenDir).exists())
         defaultOpenDirPath = lastOpenDir;
     else
-        defaultOpenDirPath = QFileInfo(filePath).dir().path();
+        defaultOpenDirPath = QFileInfo(m_CurrentFilePath).dir().path();
 
     auto targetDirPath = QFileDialog::getExistingDirectory(this,
                                                  QString("%1 - Open Directory").arg(Settings::APP_NAME), defaultOpenDirPath,
@@ -1054,7 +1050,7 @@ void MainWin::importDirImages(QString dirpath){
 
     lastOpenDir = dirpath;
     dirname = dirpath;
-    filePath = "";
+    m_CurrentFilePath = "";
     ui->m_iFileListWidget->clear();
     mImgList = scanAllImages(dirpath);
     openNextImg();
@@ -1065,7 +1061,7 @@ void MainWin::importDirImages(QString dirpath){
 }
 void MainWin::verifyImg(bool _value){
     //# Proceding next image without dialog if having any label
-    if (filePath != ""){
+    if (m_CurrentFilePath != ""){
         labelFile->toggleVerify();
 
         canvas->verified = labelFile->verified;
@@ -1092,10 +1088,10 @@ void MainWin::openPrevImg(bool _value){
     if (mImgList.size() <= 0)
         return;
 
-    if (filePath == "")
+    if (m_CurrentFilePath == "")
         return;
 
-    auto currIndex = mImgList.indexOf(filePath);
+    auto currIndex = mImgList.indexOf(m_CurrentFilePath);
     if (currIndex - 1 >= 0){
         auto filename = mImgList[currIndex - 1];
         if (filename != ""){
@@ -1122,10 +1118,10 @@ void MainWin::openNextImg(bool _value){
         return;
     }
     QString filename = "";
-    if (filePath == ""){
+    if (m_CurrentFilePath == ""){
         filename = mImgList[0];
     }else{
-        auto currIndex = mImgList.indexOf(filePath);
+        auto currIndex = mImgList.indexOf(m_CurrentFilePath);
         if (currIndex + 1 < mImgList.size()){
             filename = mImgList[currIndex + 1];
         }
@@ -1138,7 +1134,7 @@ void MainWin::openFile(bool _value){
     Q_UNUSED(_value)
     if (!mayContinue())
         return;
-    QString path = QFileInfo(filePath).dir().path();
+    QString path = QFileInfo(m_CurrentFilePath).dir().path();
     QStringList formats;
     formats << "*" + LabelFile::suffix;
     for(auto fmt : QImageReader::supportedImageFormats()){
@@ -1153,16 +1149,16 @@ void MainWin::openFile(bool _value){
 }
 void MainWin::saveFile(bool _value){
     if (defaultSaveDir != ""){
-        if (filePath != ""){
-            QString imgFileName = QFileInfo(filePath).fileName();
-            QString savedFileName = QFileInfo(filePath).completeBaseName();
+        if (m_CurrentFilePath != ""){
+            QString imgFileName = QFileInfo(m_CurrentFilePath).fileName();
+            QString savedFileName = QFileInfo(m_CurrentFilePath).completeBaseName();
             QString savedPath = defaultSaveDir + "/"+ savedFileName;
             _saveFile(savedPath);
         }
     }else{
-        QString imgFileDir = QFileInfo(filePath).dir().path();
-        QString imgFileName = QFileInfo(filePath).fileName();
-        QString savedFileName = QFileInfo(filePath).completeBaseName();
+        QString imgFileDir = QFileInfo(m_CurrentFilePath).dir().path();
+        QString imgFileName = QFileInfo(m_CurrentFilePath).fileName();
+        QString savedFileName = QFileInfo(m_CurrentFilePath).completeBaseName();
         QString savedPath = imgFileDir + "/"+ savedFileName;
         _saveFile(labelFile != nullptr ? savedPath: saveFileDialog(false));
     }
@@ -1172,12 +1168,12 @@ void MainWin::saveFileAs(bool _value){
 }
 QString MainWin::saveFileDialog(bool removeExt){
     QString caption = QString("%1 - Choose File").arg(Settings::APP_NAME);
-    QString filters = QString("File (*%s)").arg(LabelFile::suffix);
+    QString filters = QString("File (*%1)").arg(LabelFile::suffix);
     QString openDialogPath = currentPath();
     QFileDialog* dlg = new QFileDialog(this, caption, openDialogPath, filters);
     dlg->setDefaultSuffix(LabelFile::suffix);
     dlg->setAcceptMode(QFileDialog::AcceptSave);
-    auto filenameWithoutExtension = filePath;
+    auto filenameWithoutExtension = m_CurrentFilePath;
     dlg->selectFile(filenameWithoutExtension);
     dlg->setOption(QFileDialog::DontUseNativeDialog, false);
     if (dlg->exec()){
@@ -1228,7 +1224,7 @@ QMessageBox::StandardButton MainWin::errorMessage(QString title, QString message
                                 QString("<p><b>%1</b></p>%2").arg(title).arg(message));
 }
 QString MainWin::currentPath(){
-    return QFileInfo(filePath).dir().path();// (self.filePath) if self.filePath else '.'
+    return QFileInfo(m_CurrentFilePath).dir().path();// (self.filePath) if self.filePath else '.'
 
 }
 void MainWin::chooseColor1(){

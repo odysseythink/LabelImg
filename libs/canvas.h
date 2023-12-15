@@ -62,8 +62,7 @@ public:
     bool moveOutOfBound(QPointF step);
     Shape* setLastLabel(QString text, QColor line_color  = QColor(), QColor fill_color = QColor());
     void undoLastLine();
-    void resetAllLines();
-    void loadPixmap();
+    void ResetAllLines();
     void SetShapes(QList<QSharedPointer<Shape> > shapes);
     void resetState();
     void SetMode(Mode mode);
@@ -87,10 +86,23 @@ public:
         shapes[m_nSelectedShape]->line_color = color;
         update();
     }
-    void SetImage(QImage* img){
-        m_iImage = img;
-        loadPixmap();
+    bool SetImage(QString imgfilename){
+        auto image = new QImage(imgfilename);
+        if (image->isNull()){
+            return false;
+        }
+        if (m_iImage != nullptr){
+            delete m_iImage;
+            m_iImage = nullptr;
+        }
+        m_iImage = image;
+        m_strImageFilename = imgfilename;
+        __LoadPixmap();
         setEnabled(true);
+        return true;
+    }
+    QString GetImageFilename(){
+        return m_strImageFilename;
     }
 
 public slots:
@@ -113,6 +125,7 @@ protected:
     virtual void keyPressEvent(QKeyEvent *event);
 
 private:
+    void __LoadPixmap();
     void __RestoreCursor();
     void __OverrideCursor(Qt::CursorShape cursor);
     int __CurrentCursor();
@@ -138,6 +151,7 @@ public:
 
 private:
     float m_nScale;
+    QString m_strImageFilename;
     QImage* m_iImage;
     QSharedPointer<Shape> m_iSelectedShapeCopy;
     QString *m_iFilePath;
