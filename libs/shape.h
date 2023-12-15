@@ -86,8 +86,6 @@ public:
     static float scale;
     static int label_font_size;  
     static int difficult;
-
-    QString label;
     bool selected;
     bool fill;
 };

@@ -157,8 +157,7 @@ private slots:
     void toggleAdvancedMode(bool value=true);
     void toggleActions(bool value=true);
     void btnstate(int stat);
-    void editLabel(QListWidgetItem *item = nullptr);
-    void labelItemChanged(QListWidgetItem *item);
+    void editLabel();
     void fileItemDoubleClicked(QListWidgetItem *item = nullptr);
     void toggleDrawingSensitive(bool drawing=true);
     void updateFileMenu();
@@ -191,7 +190,6 @@ private:
     bool usingYoloFormat;
     bool usingPascalVocFormat;
     QString defaultSaveDir;
-    QStringList labelHist;
     LabelDialog* labelDialog;
     QCheckBox* useDefaultLabelCheckbox;
     QLineEdit* defaultLabelTextLine;

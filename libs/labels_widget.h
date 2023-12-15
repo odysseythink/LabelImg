@@ -38,10 +38,8 @@ public:
     QListWidgetItem * AddLabel(Shape* shape);
     QListWidgetItem * GetLabelItem(int idx);
     void ClearSelection();
-    QListWidgetItem * CurrentItem();
-    bool NoShapes(){
-        return m_ItemsToShapesMap.count() == 0;
-    }
+    Shape * CurrentShape();
+    bool NoShapes();
     void ToggleShapes(bool value);
     void SelectShape(Shape* shape);
 
@@ -56,19 +54,16 @@ private slots:
     void __OnPopLabelListMenu(QPoint point);
 
 private:
+    QListWidgetItem * __CurrentItem();
 
 signals:
     void sigDifficultChanged(int);
-    void sigLabelSelectionChanged(QListWidgetItem *item);
-    void sigEditLable(QListWidgetItem *item);
-    void sigLabelChanged(QListWidgetItem *item);
+    void sigDirty();
 
 private:
     Ui::LabelsWidget *ui;
     Canvas* m_iCanvas;
     QMenu* m_iLabelListMenu;
-    QMap<QListWidgetItem*, Shape*> m_ItemsToShapesMap;
-    QMap<Shape*, QListWidgetItem*> m_ShapesToItemsMap;
     bool m_bNoSelectionSlot;
 };
 

@@ -2,6 +2,8 @@
 #include "ui_labels_widget.h"
 #include <QDebug>
 #include "common.h"
+#include "libs/label_dialog.h"
+#include "settings.h"
 
 LabelsWidget::LabelsWidget(QWidget *parent) :
     QWidget(parent),
@@ -51,8 +53,6 @@ void LabelsWidget::SetEditVisible(bool stat)
 void LabelsWidget::ClearLabel()
 {
     ui->m_iLabelListWidget->clear();
-    m_ItemsToShapesMap.clear();
-    m_ShapesToItemsMap.clear();
 }
 
 int LabelsWidget::LabelCount()
@@ -76,12 +76,8 @@ void LabelsWidget::RemLabel(Shape* shape)
         qCritical("invalid arg");
         return;
     }
-    auto item = m_ShapesToItemsMap[shape];
-    if (item != nullptr){
-        ui->m_iLabelListWidget->takeItem(ui->m_iLabelListWidget->row(item));
-        delete m_ItemsToShapesMap.take(item);
-    }
-    delete m_ShapesToItemsMap.take(shape);
+
+    ui->m_iLabelListWidget->takeItem(ui->m_iLabelListWidget->row(shape));
 }
 
 QListWidgetItem *LabelsWidget::AddLabel(Shape* shape)
@@ -90,14 +86,11 @@ QListWidgetItem *LabelsWidget::AddLabel(Shape* shape)
         qCritical("invalid arg");
         return nullptr;
     }
-    auto item = new QListWidgetItem(shape->label);
-    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    item->setCheckState(Qt::Checked);
-    item->setBackground(generateColorByText(shape->label));
-    ui->m_iLabelListWidget->addItem(item);
-    m_ItemsToShapesMap[item] = shape;
-    m_ShapesToItemsMap[shape] = item;
-    return item;
+    shape->setFlags(shape->flags() | Qt::ItemIsUserCheckable);
+    shape->setCheckState(Qt::Checked);
+    shape->setBackground(generateColorByText(shape->text()));
+    ui->m_iLabelListWidget->addItem(shape);
+    return shape;
 }
 
 QListWidgetItem *LabelsWidget::GetLabelItem(int idx)
@@ -114,7 +107,7 @@ void LabelsWidget::ClearSelection()
     ui->m_iLabelListWidget->clearSelection();
 }
 
-QListWidgetItem *LabelsWidget::CurrentItem()
+QListWidgetItem *LabelsWidget::__CurrentItem()
 {
     auto items = ui->m_iLabelListWidget->selectedItems();
     if (items.size())
@@ -122,16 +115,31 @@ QListWidgetItem *LabelsWidget::CurrentItem()
     return nullptr;
 }
 
+Shape *LabelsWidget::CurrentShape()
+{
+    QListWidgetItem *item = __CurrentItem();
+    if(item != nullptr){
+        return static_cast<Shape* >(item);
+    }
+    return nullptr;
+}
+
+bool LabelsWidget::NoShapes()
+{
+    return ui->m_iLabelListWidget->count() == 0;
+}
+
 void LabelsWidget::ToggleShapes(bool value)
 {
-    for (auto item : m_ItemsToShapesMap.keys())
-        item->setCheckState(value?Qt::Checked : Qt::Unchecked);
+    for (int iLoop = 0; iLoop < ui->m_iLabelListWidget->count(); iLoop++){
+        ui->m_iLabelListWidget->item(iLoop)->setCheckState(value?Qt::Checked : Qt::Unchecked);
+    }
 }
 
 void LabelsWidget::SelectShape(Shape *shape)
 {
     if (shape != nullptr)
-        m_ShapesToItemsMap[shape]->setSelected(true);
+        shape->setSelected(true);
 }
 
 void LabelsWidget::__OnDifficultChanged(int stat)
@@ -144,14 +152,13 @@ void LabelsWidget::__OnDifficultChanged(int stat)
     if (!m_iCanvas->editing())
         return;
 
-    auto item = CurrentItem();
+    auto item = __CurrentItem();
     if (!item) //# If not selected Item, take the first one
         item = GetLabelItem(LabelCount()-1);
 
     auto difficult = stat == Qt::Checked?true:false;
-
-    if (m_ItemsToShapesMap.contains(item) && m_ItemsToShapesMap[item] != nullptr){
-        auto shape = m_ItemsToShapesMap[item];
+    Shape* shape = dynamic_cast<Shape*>(item);
+    if (shape != nullptr){
         if (difficult != shape->difficult){
             shape->difficult = difficult;
             emit sigDifficultChanged(stat);
@@ -159,10 +166,11 @@ void LabelsWidget::__OnDifficultChanged(int stat)
             shape->SetVisible(item->checkState() == Qt::Checked);
         }
     }
-
 }
 
 void LabelsWidget::OnLabelSelectionChanged(QListWidgetItem *item){
+//    qDebug("----------");
+    printf("OnLabelSelectionChanged\n");
     if (item == nullptr){
         auto items = ui->m_iLabelListWidget->selectedItems();
         if (items.size())
@@ -170,16 +178,20 @@ void LabelsWidget::OnLabelSelectionChanged(QListWidgetItem *item){
     }
 
     if (item != nullptr && m_iCanvas != nullptr && m_iCanvas->editing()){
-        m_iCanvas->selectShape(m_ItemsToShapesMap[item]);
-        auto shape = m_ItemsToShapesMap[item];
-//        # Add Chris
-        SetDifficult(shape->difficult);
+        printf("OnLabelSelectionChanged-----%s\n", item->text().toStdString().c_str());
+        Shape* shape = dynamic_cast<Shape*>(item);
+        if (shape != nullptr){
+            m_iCanvas->selectShape(shape);
+    //        # Add Chris
+            SetDifficult(shape->difficult);
+        }
         m_bNoSelectionSlot = true;
     }
 }
 
 void LabelsWidget::OnShapeSelected(Shape *shape)
 {
+    qDebug("----------");
     if (m_bNoSelectionSlot){
         m_bNoSelectionSlot = false;
     }else{
@@ -192,22 +204,34 @@ void LabelsWidget::OnShapeSelected(Shape *shape)
 
 void LabelsWidget::__OnEditLable(QListWidgetItem *item)
 {
+    qDebug("----------");
     if(item != nullptr){
-        emit sigEditLable(item);
+        if (m_iCanvas == nullptr || !m_iCanvas->editing())
+            return;
+        QStringList labels = Settings::GetInstance()->Get(SETTING_LABEL_HIST, QStringList());
+        LabelDialog* pLabelDialog = new LabelDialog(labels, this);
+        auto text = pLabelDialog->popUp(item->text());
+        if (text != ""){
+            item->setText(text);
+            item->setBackground(generateColorByText(text));
+            emit sigDirty();
+            if (!labels.contains(text)){
+                labels.append(text);
+                Settings::GetInstance()->Set(SETTING_LABEL_HIST, labels);
+            }
+        }
+        delete pLabelDialog;
     }
 }
 
 void LabelsWidget::__OnLabelChanged(QListWidgetItem *item)
 {
+    qDebug("----------");
     if(item != nullptr && m_iCanvas != nullptr){
-        auto shape = m_ItemsToShapesMap[item];
-        auto label = item->text();
-        if (label != shape->label){
-            shape->label = item->text();
-            shape->line_color = generateColorByText(shape->label);
-            emit sigLabelChanged(item);
-        }else{ // # User probably changed item visibility
+        Shape* shape = dynamic_cast<Shape*>(item);
+        if (shape != nullptr){
             shape->SetVisible(item->checkState() == Qt::Checked);
+            emit sigDirty();
         }
     //# Callback functions:
     }

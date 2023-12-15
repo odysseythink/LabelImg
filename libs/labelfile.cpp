@@ -100,7 +100,7 @@ void LabelFile::savePascalVocFormat(QString filename, QList<QSharedPointer<Shape
     anotation->set_segmented(0);
     for (auto shape : shapes){
         pb::PK_PASCAL_VOC_ANNOTATION_OBJ* obj = anotation->add_objs();
-        obj->set_objname(shape->label.toStdString());
+        obj->set_objname(shape->text().toStdString());
         obj->set_objpose("Unspecified");
         int xmin,ymin,xmax,ymax;
         LabelFile::convertPoints2BndBox(shape->points, xmin,ymin,xmax,ymax);
@@ -167,7 +167,7 @@ void LabelFile::saveYoloFormat(QString filename, QList<QSharedPointer<Shape> >& 
         LabelFile::convertPoints2BndBox(shape->points, xmin,ymin,xmax,ymax);
         int classIndex = 0;
         float xcen = 0., ycen = 0., w = 0., h = 0.;
-        BndBox2YoloLine(img, xmin, ymin, xmax, ymax, shape->label, classList, classIndex, xcen, ycen, w, h);
+        BndBox2YoloLine(img, xmin, ymin, xmax, ymax, shape->text(), classList, classIndex, xcen, ycen, w, h);
         filestream << QString::asprintf("%d %.6f %.6f %.6f %.6f\n",classIndex, xcen, ycen, w, h);
     }
     for(auto c : classList){

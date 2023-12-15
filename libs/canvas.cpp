@@ -139,7 +139,7 @@ void Canvas::finalise(){
     m_iCurrentShape.clear();
     m_iCurrentLineShape->points.clear();
     setHiding(false);
-    emit newShape();
+    emit sigNewShape();
     update();
 }
 bool Canvas::closeEnough(QPointF p1,QPointF p2){
@@ -301,7 +301,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
                     shapes[m_nHighlightShape]->highlightClear();
                 m_nHightlightVertex = -1;
                 m_nHighlightShape = iLoop;
-                setToolTip(QString("Click & drag to move shape '%s'").arg(shape->label));
+                setToolTip(QString("Click & drag to move shape '%1'").arg(shape->text()));
                 setStatusTip(toolTip());
                 __OverrideCursor(CURSOR_GRAB);
                 update();
@@ -416,7 +416,7 @@ void Canvas::selectShape(Shape* shape){
     for(int iLoop = 0; iLoop < shapes.size(); iLoop++){
         if(shape == shapes[iLoop].get()){
             m_nSelectedShape = iLoop;
-            setHiding();
+//            setHiding();
             emit sigSelectionChanged(true);
             update();
             return;
@@ -775,18 +775,18 @@ bool Canvas::moveOutOfBound(QPointF step){
     return isTrue;
 }
 Shape* Canvas::setLastLabel(QString text, QColor line_color, QColor fill_color){
-      if (text == ""){
-          qCritical("invalid text");
-          return nullptr;
-      }
-      shapes[shapes.size() -1]->label = text;
-      if (line_color.isValid())
-          shapes[shapes.size()-1]->line_color = line_color;
+    if (text == ""){
+        qCritical("invalid text");
+        return nullptr;
+    }
+    shapes[shapes.size() -1]->setText(text);
+    if (line_color.isValid())
+        shapes[shapes.size()-1]->line_color = line_color;
 
-      if (fill_color.isValid())
-          shapes[shapes.size()-1]->fill_color = fill_color;
+    if (fill_color.isValid())
+        shapes[shapes.size()-1]->fill_color = fill_color;
 
-      return shapes[shapes.size()-1].get();
+    return shapes[shapes.size()-1].get();
 }
 void Canvas::UndoLastLine(){
     if (shapes.size() == 0){

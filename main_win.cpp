@@ -30,7 +30,6 @@ usingYoloFormat = false;
 //# For loading all image under a directory
 //mImgList = []
 dirname = "";
-//labelHist = []
 lastOpenDir = "";
 
 //# Whether we need to save or not.
@@ -45,13 +44,9 @@ _beginner = true;
 //    # Load predefined classes to the list
     loadPredefinedClasses(defaultPrefdefClassFile);
 //# Main widgets and related state.
- labelDialog = new LabelDialog(labelHist, parent=this);
 
     ui->m_iLabelsWidget->SetCanvas(canvas);
     connect(ui->m_iLabelsWidget, SIGNAL(sigDifficultChanged(int)), this, SLOT(btnstate(int)));
-    connect(ui->m_iLabelsWidget, SIGNAL(sigEditLable(QListWidgetItem *)), this, SLOT(editLabel(QListWidgetItem*)));
-    connect(ui->m_iLabelsWidget, SIGNAL(sigLabelChanged(QListWidgetItem *)), this, SLOT(labelItemChanged(QListWidgetItem*)));
-
     connect(ui->m_iFileListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(fileItemDoubleClicked(QListWidgetItem *)));
 
     zoomWidget = new ZoomWidget();
@@ -68,12 +63,13 @@ _beginner = true;
     scrollBars[Qt::Horizontal] = ui->m_iCentralScrollArea->horizontalScrollBar();
     connect(canvas, SIGNAL(scrollRequest(double, int)), this, SLOT(scrollRequest(double, int)));
 
-    connect(canvas, SIGNAL(newShape()), this, SLOT(newShape()));
+    connect(canvas, SIGNAL(sigNewShape()), this, SLOT(newShape()));
     connect(canvas, SIGNAL(shapeMoved()), this, SLOT(setDirty()));
     connect(canvas, SIGNAL(sigSelectionChanged(bool)), this, SLOT(shapeSelectionChanged(bool)));
     connect(canvas, SIGNAL(sigShapeSelected(Shape*)), ui->m_iLabelsWidget, SLOT(OnShapeSelected(Shape*)));
     connect(canvas, SIGNAL(drawingPolygon(bool)), this, SLOT(toggleDrawingSensitive(bool)));
     connect(canvas, SIGNAL(sigDirty()), this, SLOT(setDirty()));
+    connect(ui->m_iLabelsWidget, SIGNAL(sigDirty()), this, SLOT(setDirty()));
 
     setCentralWidget(ui->m_iCentralScrollArea);
 //    addDockWidget(Qt::RightDockWidgetArea, dock);
@@ -326,7 +322,8 @@ double MainWin::scaleManualZoom(){
 }
 
 void MainWin::loadPredefinedClasses(QString predefClassesFile){
-
+    bool changed = false;
+    QStringList labels = Settings::GetInstance()->Get(SETTING_LABEL_HIST, QStringList());
     QFile file(predefClassesFile);
    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
    {
@@ -338,10 +335,16 @@ void MainWin::loadPredefinedClasses(QString predefClassesFile){
        while(!line.isNull())//字符串有内容
        {
            line=in.readLine();//循环读取下行
-           labelHist.append(line);
+           if(!labels.contains(line)){
+                labels.append(line);
+                changed = true;
+           }
        }
    }
    file.close();
+   if (changed){
+       Settings::GetInstance()->Set(SETTING_LABEL_HIST, labels);
+   }
 }
 
 QAction *MainWin::newAction(QString text, const char *slot, QString shortcut, QString icon, QString tip, bool enabled, bool checkable, QWidget* parent)
@@ -590,15 +593,21 @@ void MainWin::updateFileMenu(){
     }
 }
 
-void MainWin::editLabel(QListWidgetItem *item){
+void MainWin::editLabel(){
     if (! canvas->editing())
         return;
-    auto text = labelDialog->popUp(item->text());
+    Shape* currentShape = ui->m_iLabelsWidget->CurrentShape();
+    if (currentShape == nullptr){
+        return;
+    }
+    LabelDialog* pLabelDialog = new LabelDialog(Settings::GetInstance()->Get(SETTING_LABEL_HIST, QStringList()), this);
+    auto text = pLabelDialog->popUp(currentShape->text());
     if (text != ""){
-        item->setText(text);
-        item->setBackground(generateColorByText(text));
+        currentShape->setText(text);
+        currentShape->setBackground(generateColorByText(text));
         setDirty();
     }
+    delete pLabelDialog;
 //# Tzutalin 20160906 : Add file list and dock to move faster
 }
 
@@ -684,7 +693,7 @@ bool MainWin::saveLabels(QString annotationFilePath){
     }else if (usingYoloFormat){
         if (!annotationFilePath.toLower().endsWith(".txt"))
             annotationFilePath += TXT_EXT;
-        labelFile->saveYoloFormat(annotationFilePath, canvas->shapes, m_CurrentFilePath, imageData, labelHist);
+        labelFile->saveYoloFormat(annotationFilePath, canvas->shapes, m_CurrentFilePath, imageData, Settings::GetInstance()->Get(SETTING_LABEL_HIST, QStringList()));
     }else{
 //        labelFile.save(annotationFilePath, shapes, self.filePath, self.imageData,
 //                            self.lineColor.getRgb(), self.fillColor.getRgb());
@@ -699,28 +708,26 @@ void MainWin::copySelectedShape(){
 }
 
 
-void MainWin::labelItemChanged(QListWidgetItem* item){
-    setDirty();
-}
 void MainWin::newShape(){
 //    """Pop-up and give focus to the label editor.
 
 //    position MUST be in global coordinates.
 //    """
+    QStringList labels = Settings::GetInstance()->Get(SETTING_LABEL_HIST, QStringList());
     QString text = "";
     if (!ui->m_iLabelsWidget->UseDefaultLabel() || ui->m_iLabelsWidget->DefaultLabel() == ""){
-        if (labelHist.size() > 0){
-            labelDialog = new LabelDialog(labelHist, this);
-        }
+
+        LabelDialog* pLabelDialog = new LabelDialog(labels, this);
 //        # Sync single class mode from PR#106
 
         if (singleClassMode->isChecked() && lastLabel != ""){
             text = lastLabel;
         }else{
             text= prevLabelText;
-            text = labelDialog->popUp(text);
+            text = pLabelDialog->popUp(text);
             lastLabel = text;
         }
+        delete pLabelDialog;
     }else{
         text = ui->m_iLabelsWidget->DefaultLabel();
     }
@@ -739,8 +746,10 @@ void MainWin::newShape(){
         }
         setDirty();
 
-        if(!labelHist.contains(text))
-            labelHist.append(text);
+        if(!labels.contains(text)){
+            labels.append(text);
+            Settings::GetInstance()->Set(SETTING_LABEL_HIST, labels);
+        }
     }else{
 //        # self.canvas.undoLastLine()
         canvas->ResetAllLines();

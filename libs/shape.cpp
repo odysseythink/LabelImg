@@ -20,7 +20,6 @@ int Shape::difficult = 0;
 Shape::Shape(QString label, QColor line_color, bool difficult, bool paint_label,QListWidget *parent)
     : QObject(parent), QListWidgetItem(label, parent), m_bVisible(true)
 {
-    this->label = label;
 //    points = [];
     fill = false;
     selected = false;
@@ -48,7 +47,7 @@ Shape::Shape(QString label, QColor line_color, bool difficult, bool paint_label,
 Shape::Shape(const Shape &s)
 {
     if( this != &s){
-        this->label = s.label;
+        setText(s.text());
         this->points = s.points;
         this->fill = s.fill;
         this->selected = s.selected;
@@ -131,7 +130,7 @@ void Shape::paint(QPainter* painter){
 //                    self.label = "";
                 if (min_y < min_y_label)
                     min_y += min_y_label;
-                painter->drawText(min_x, min_y, label);
+                painter->drawText(min_x, min_y, text());
             }
         }
 
@@ -203,7 +202,7 @@ void Shape::highlightVertex(int i, int action){
 
 Shape &Shape::operator=(const Shape &arr){
     if( this != &arr){
-        this->label = arr.label;
+        setText(arr.text());
         this->points = arr.points;
         this->fill = arr.fill;
         this->selected = arr.selected;

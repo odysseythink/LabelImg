@@ -133,7 +133,7 @@ private:
 signals:
     void zoomRequest(int);
     void scrollRequest(double, int);
-    void newShape();
+    void sigNewShape();
     void sigSelectionChanged(bool);
     void sigShapeSelected(Shape*);
     void shapeMoved();

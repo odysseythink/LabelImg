@@ -32,6 +32,7 @@
 #define FORMAT_YOLO "YOLO"
 #define SETTING_DRAW_SQUARE   "draw/square"
 #define DEFAULT_ENCODING  "utf-8"
+#define SETTING_LABEL_HIST  "label_histories"
 
 
 void LogHandler(QtMsgType type, const QMessageLogContext &info, const QString &msg);
