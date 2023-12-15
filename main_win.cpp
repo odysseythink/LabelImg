@@ -743,7 +743,7 @@ void MainWin::newShape(){
             labelHist.append(text);
     }else{
 //        # self.canvas.undoLastLine()
-        canvas->resetAllLines();
+        canvas->ResetAllLines();
     }
 }
 void MainWin::scrollRequest(double delta, int orientation){

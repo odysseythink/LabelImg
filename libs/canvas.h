@@ -61,7 +61,7 @@ public:
     void moveOnePixel(QString direction);
     bool moveOutOfBound(QPointF step);
     Shape* setLastLabel(QString text, QColor line_color  = QColor(), QColor fill_color = QColor());
-    void undoLastLine();
+    void UndoLastLine();
     void ResetAllLines();
     void SetShapes(QList<QSharedPointer<Shape> > shapes);
     void resetState();

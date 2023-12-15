@@ -17,8 +17,8 @@ int Shape::label_font_size = 8;
 int Shape::difficult = 0;
 
 
-Shape::Shape(QString label, QColor line_color, bool difficult, bool paint_label,QObject *parent)
-    : QObject(parent), m_bVisible(true)
+Shape::Shape(QString label, QColor line_color, bool difficult, bool paint_label,QListWidget *parent)
+    : QObject(parent), QListWidgetItem(label, parent), m_bVisible(true)
 {
     this->label = label;
 //    points = [];

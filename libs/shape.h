@@ -11,6 +11,8 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMetaType>
+#include <QListWidgetItem>
+#include <QListWidget>
 
 #define sys_maxsize 2147483647
 
@@ -21,11 +23,11 @@
 #define DEFAULT_VERTEX_FILL_COLOR  QColor(0, 255, 0, 255)
 #define DEFAULT_HVERTEX_FILL_COLOR  QColor(255, 0, 0)
 
-class Shape : public QObject
+class Shape : public QObject, public QListWidgetItem
 {
     Q_OBJECT
 public:
-    explicit Shape(QString label="", QColor line_color=QColor(), bool difficult=false, bool paintLabel=false,QObject *parent = nullptr);
+    explicit Shape(QString label="", QColor line_color=QColor(), bool difficult=false, bool paintLabel=false,QListWidget *parent = nullptr);
     Shape(const Shape& s);
     ~Shape();
 
