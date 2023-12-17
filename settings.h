@@ -63,8 +63,8 @@ public:
             if (parentVal.value(tmplist[tmplist.size()-1]).isNull() || !parentVal.value(tmplist[tmplist.size()-1]).isValid()){
                 return defaultVal;
             }
-            auto gettypename = typeid(T).name();
-            qDebug("gettypename=%s", gettypename);
+//            auto gettypename = typeid(T).name();
+//            qDebug("gettypename=%s", gettypename);
             return qvariant_cast<T>(parentVal.value(tmplist[tmplist.size()-1]));
 //            if (strcmp(gettypename,"bool") == 0){
 //                return parentVal.value(tmplist[tmplist.size()-1]).toBool();
@@ -88,8 +88,8 @@ public:
             if (value(key).isNull() || !value(key).isValid()){
                 return defaultVal;
             }
-            auto gettypename = typeid(T).name();
-            qDebug("gettypename=%s", gettypename);
+//            auto gettypename = typeid(T).name();
+//            qDebug("gettypename=%s", gettypename);
 //            if (strcmp(gettypename,"bool") == 0){
 //                return value(key).toBool();
 //            } else if(strcmp(gettypename,"QString") == 0){

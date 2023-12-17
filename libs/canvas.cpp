@@ -5,7 +5,7 @@
 #include "libs/color_dialog.h"
 
 Canvas::Canvas(QString *filePath, QWidget *parent)
-    : QWidget(parent), m_nEpsilon(11.0), m_strImageFilename("")
+    : QWidget(parent), m_strImageFilename(""), m_nEpsilon(11.0)
 {
     this->m_iFilePath = filePath;
     m_enMode = Canvas::EDIT;
@@ -66,15 +66,6 @@ bool Canvas::drawing(){
 bool Canvas::editing(){
     return m_enMode == Canvas::EDIT;
 }
-void Canvas::setEditing(bool value){
-    m_enMode = value?Canvas::EDIT:Canvas::CREATE;
-    if(!value){  //# Create
-        unHighlight();
-        deSelectShape();
-    }
-    m_PrevPoint = QPointF();
-    repaint();
-}
 
 void Canvas::SetMode(Mode mode){
     m_enMode = mode;
@@ -86,6 +77,11 @@ void Canvas::SetMode(Mode mode){
     }
     m_PrevPoint = QPointF();
     repaint();
+}
+
+void Canvas::Paint()
+{
+    update();
 }
 
 void Canvas::unHighlight(){
@@ -276,10 +272,9 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
 //    # - Highlight vertex
 //    # Update shape/vertex fill and tooltip value accordingly.
     setToolTip("Image");
-    bool isHightLight =false;
+    bool isLoopBreak =false;
     for(int iLoop = shapes.size() - 1; iLoop >= 0; iLoop--){
         if (shapes.at(iLoop)->Visible()){
-            isHightLight = true;
             Shape* shape = shapes.at(iLoop).get();
 
             //        # Look for a nearby vertex to highlight. If that fails,
@@ -295,6 +290,7 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
                 setToolTip("Click & drag to move point");
                 setStatusTip(toolTip());
                 update();
+                isLoopBreak = true;
                 break;
             }else if (shape->containsPoint(pos)){
                 if (selectedVertex())
@@ -305,11 +301,12 @@ void Canvas::mouseMoveEvent(QMouseEvent * ev){
                 setStatusTip(toolTip());
                 __OverrideCursor(CURSOR_GRAB);
                 update();
+                isLoopBreak = true;
                 break;
             }
         }
     }
-    if (!isHightLight){ //# Nothing found, clear highlights, reset state.
+    if (!isLoopBreak){ //# Nothing found, clear highlights, reset state.
         if (m_nHighlightShape >= 0){
             shapes[m_nHighlightShape]->highlightClear();
             update();
@@ -323,6 +320,7 @@ void Canvas::mousePressEvent(QMouseEvent * ev){
     QPointF pos = transformPos(ev->pos());
 
     if (ev->button() == Qt::LeftButton){
+        qDebug("-----++++++++++mode=%d", m_enMode);
         if (drawing())
             handleDrawing(pos);
         else{
@@ -391,7 +389,7 @@ void Canvas::handleDrawing(QPointF pos){
       m_iCurrentShape = QSharedPointer<Shape>(new Shape());
       m_iCurrentShape->addPoint(pos);
       m_iCurrentLineShape->points << pos << pos;
-      setHiding();
+//      setHiding();
       emit drawingPolygon(true);
       update();
   }
@@ -579,6 +577,7 @@ void Canvas::paintEvent(QPaintEvent *event){
     p->drawPixmap(0, 0, pixmap);
     Shape::scale = m_nScale;
     for(auto shape : shapes){
+        qDebug("----------selected=%d, m_bHideBackround=%d, visible=%d", shape->selected, m_bHideBackround, shape->Visible());
         if ((shape->selected || !m_bHideBackround) && shape->Visible()){
             shape->fill = shape->selected |shape == (m_nHighlightShape>=0?shapes[m_nHighlightShape].get():nullptr);
             shape->paint(p);
@@ -731,6 +730,7 @@ void Canvas::keyPressEvent(QKeyEvent *ev){
 
 void Canvas::OnCreateShape()
 {
+    qDebug("---------");
     SetMode(CREATE);
 }
 void Canvas::moveOnePixel(QString direction){
@@ -774,7 +774,7 @@ bool Canvas::moveOutOfBound(QPointF step){
     }
     return isTrue;
 }
-Shape* Canvas::setLastLabel(QString text, QColor line_color, QColor fill_color){
+Shape* Canvas::SetLastLabel(QString text, QColor line_color, QColor fill_color){
     if (text == ""){
         qCritical("invalid text");
         return nullptr;

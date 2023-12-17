@@ -169,7 +169,7 @@ void LabelsWidget::__OnDifficultChanged(int stat)
 }
 
 void LabelsWidget::OnLabelSelectionChanged(QListWidgetItem *item){
-//    qDebug("----------");
+    qDebug("----------");
     printf("OnLabelSelectionChanged\n");
     if (item == nullptr){
         auto items = ui->m_iLabelListWidget->selectedItems();
@@ -228,9 +228,12 @@ void LabelsWidget::__OnLabelChanged(QListWidgetItem *item)
 {
     qDebug("----------");
     if(item != nullptr && m_iCanvas != nullptr){
+        qDebug("----------");
         Shape* shape = dynamic_cast<Shape*>(item);
         if (shape != nullptr){
+            qDebug("----------%d", item->checkState() == Qt::Checked);
             shape->SetVisible(item->checkState() == Qt::Checked);
+            m_iCanvas->Paint();
             emit sigDirty();
         }
     //# Callback functions:

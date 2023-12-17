@@ -545,6 +545,7 @@ void MainWin::createShape(){
     emit sigCreateShape();
 }
 void MainWin::toggleDrawingSensitive(bool drawing){
+    qDebug("---------");
 //    """In the middle of drawing, toggling between modes should be disabled."""
     actions.editMode->setEnabled(not drawing);
     if (!drawing && beginner()){
@@ -556,6 +557,7 @@ void MainWin::toggleDrawingSensitive(bool drawing){
 }
 
 void MainWin::__OnShapeModeChanged(){
+    qDebug("---------");
     if(!advanced()){
         qFatal("__OnShapeModeChanged must in advanced");
         return;
@@ -709,6 +711,7 @@ void MainWin::copySelectedShape(){
 
 
 void MainWin::newShape(){
+    qDebug("---------");
 //    """Pop-up and give focus to the label editor.
 
 //    position MUST be in global coordinates.
@@ -736,7 +739,7 @@ void MainWin::newShape(){
     if (text != ""){
         prevLabelText = text;
         QColor generate_color = generateColorByText(text);
-        auto shape = canvas->setLastLabel(text, generate_color, generate_color);
+        auto shape = canvas->SetLastLabel(text, generate_color, generate_color);
         addLabel(shape);
         if (beginner()){//  # Switch to edit mode.
             canvas->SetMode(Canvas::EDIT);
